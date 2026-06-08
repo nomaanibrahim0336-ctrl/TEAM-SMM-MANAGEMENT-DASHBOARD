@@ -303,6 +303,21 @@
 .search-input:focus { border-color: #6366F1; width: 300px; }
 .search-input::placeholder { color: #6B7280; }
 
+/* ===== TENURE PILLS ===== */
+.tenure-pill {
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  border: 1px solid #374151;
+  background: #1F2937;
+  color: #9CA3AF;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.tenure-pill:hover { border-color: #6366F1; color: #fff; }
+.tenure-pill.active { background: #4F46E5; border-color: #4F46E5; color: #fff; }
+
 /* ===== ANIMATIONS ===== */
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(8px); }

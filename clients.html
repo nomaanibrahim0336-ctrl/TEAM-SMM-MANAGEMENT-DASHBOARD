@@ -85,30 +85,37 @@
             </select>
           </div>
         </div>
+        <!-- Tenure selector -->
+        <div>
+          <label class="form-label">Tenure (Months)</label>
+          <div class="flex flex-wrap gap-2 mt-1" id="tenureBtns">
+            <button type="button" onclick="selectTenure(1)"  class="tenure-pill" data-val="1">1 mo</button>
+            <button type="button" onclick="selectTenure(2)"  class="tenure-pill" data-val="2">2 mo</button>
+            <button type="button" onclick="selectTenure(3)"  class="tenure-pill" data-val="3">3 mo</button>
+            <button type="button" onclick="selectTenure(6)"  class="tenure-pill" data-val="6">6 mo</button>
+            <button type="button" onclick="selectTenure(12)" class="tenure-pill" data-val="12">12 mo</button>
+            <button type="button" onclick="selectTenure('custom')" class="tenure-pill" data-val="custom">Custom</button>
+          </div>
+          <div id="customTenureWrap" class="hidden mt-2 flex items-center gap-2">
+            <input id="customTenureInput" type="number" min="1" max="60" class="form-input w-28" placeholder="e.g. 9" oninput="onCustomTenure()"/>
+            <span class="text-sm text-gray-400">months</span>
+          </div>
+          <input type="hidden" id="clientTenure" value="3"/>
+        </div>
+
         <div class="grid grid-cols-2 gap-4">
           <div>
-            <label class="form-label">Contract Start *</label>
-            <input id="clientStart" type="date" class="form-input"/>
+            <label class="form-label">Contract Start</label>
+            <input id="clientStart" type="date" class="form-input" oninput="autoCalcEnd()"/>
           </div>
           <div>
-            <label class="form-label">Contract End *</label>
+            <label class="form-label">Contract End <span class="text-gray-600 font-normal">(auto or custom)</span></label>
             <input id="clientEnd" type="date" class="form-input"/>
           </div>
         </div>
-        <div class="grid grid-cols-2 gap-4">
-          <div>
-            <label class="form-label">Monthly Budget (PKR) *</label>
-            <input id="clientBudget" type="number" class="form-input" placeholder="e.g. 50000"/>
-          </div>
-          <div>
-            <label class="form-label">Tenure (Months)</label>
-            <select id="clientTenure" class="form-input">
-              <option value="1">1 Month</option>
-              <option value="3">3 Months</option>
-              <option value="6">6 Months</option>
-              <option value="12">12 Months</option>
-            </select>
-          </div>
+        <div>
+          <label class="form-label">Monthly Budget (PKR)</label>
+          <input id="clientBudget" type="number" class="form-input" placeholder="e.g. 50000"/>
         </div>
         <div>
           <label class="form-label">Content Types</label>
@@ -286,6 +293,35 @@
       renderMemberTabs();
     }
 
+    function selectTenure(val) {
+      document.querySelectorAll('.tenure-pill').forEach(b => b.classList.remove('active'));
+      const btn = document.querySelector(`.tenure-pill[data-val="${val}"]`);
+      if (btn) btn.classList.add('active');
+      const wrap = document.getElementById('customTenureWrap');
+      if (val === 'custom') {
+        wrap.classList.remove('hidden');
+        document.getElementById('clientTenure').value = document.getElementById('customTenureInput').value || '';
+      } else {
+        wrap.classList.add('hidden');
+        document.getElementById('clientTenure').value = val;
+        autoCalcEnd();
+      }
+    }
+
+    function onCustomTenure() {
+      const v = parseInt(document.getElementById('customTenureInput').value);
+      if (v > 0) { document.getElementById('clientTenure').value = v; autoCalcEnd(); }
+    }
+
+    function autoCalcEnd() {
+      const start = document.getElementById('clientStart').value;
+      const tenure = parseInt(document.getElementById('clientTenure').value);
+      if (!start || !tenure) return;
+      const d = new Date(start);
+      d.setMonth(d.getMonth() + tenure);
+      document.getElementById('clientEnd').value = d.toISOString().split('T')[0];
+    }
+
     function populateRoleDropdown(selectId, roles, selectedValue) {
       const sel = document.getElementById(selectId);
       const firstOpt = sel.options[0];
@@ -316,6 +352,19 @@
       populateRoleDropdown('clientPM',        ['admin','project_manager'], client?.pm || '');
       populateRoleDropdown('clientExecutive',  ['creator'],                 client?.executive || '');
       populateRoleDropdown('clientDesigner',   ['designer'],                client?.designer || '');
+      // Set tenure pills
+      const tenure = client?.tenure || 3;
+      const presets = [1, 2, 3, 6, 12];
+      document.getElementById('customTenureWrap').classList.add('hidden');
+      document.querySelectorAll('.tenure-pill').forEach(b => b.classList.remove('active'));
+      if (presets.includes(tenure)) {
+        selectTenure(tenure);
+      } else {
+        document.querySelector('.tenure-pill[data-val="custom"]').classList.add('active');
+        document.getElementById('customTenureWrap').classList.remove('hidden');
+        document.getElementById('customTenureInput').value = tenure;
+        document.getElementById('clientTenure').value = tenure;
+      }
       document.getElementById('clientModal').classList.add('open');
     }
 
