@@ -28,6 +28,25 @@
     <main class="flex-1 px-8 py-6 space-y-6" id="dashMain"></main>
   </div>
 
+  <!-- CHANGE TICKET DETAIL MODAL -->
+  <div id="changeTicketModal" class="modal-overlay" onclick="if(event.target===this)closeChangeTicket()">
+    <div class="modal-box" style="max-width:520px">
+      <div class="flex items-center justify-between px-6 py-5 border-b border-gray-800">
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 rounded-lg bg-red-500/15 border border-red-500/30 flex items-center justify-center">
+            <i class="fa-solid fa-flag text-red-400 text-sm"></i>
+          </div>
+          <div>
+            <h2 class="text-base font-semibold text-white" id="ctClientName">Change Request</h2>
+            <p class="text-xs text-gray-500 mt-0.5" id="ctTaskMeta"></p>
+          </div>
+        </div>
+        <button onclick="closeChangeTicket()" class="text-gray-500 hover:text-gray-300"><i class="fa-solid fa-xmark text-lg"></i></button>
+      </div>
+      <div class="p-6 space-y-4" id="ctBody"></div>
+    </div>
+  </div>
+
   <script src="assets/js/app.js"></script>
   <script>
     document.addEventListener('DOMContentLoaded', () => {
@@ -46,6 +65,55 @@
 
       renderDashboard(user);
     });
+
+    function openChangeTicket(taskId) {
+      const t = APP.tasks.find(t => t.id === taskId);
+      if (!t) return;
+      const client = APP.clients.find(c => c.id === t.clientId);
+      const changeComments = (t.comments||[]).filter(cm => cm.type === 'change_request' || (!cm.type && t.status === 'changes_requested'));
+      const due = daysUntil(t.dueDate);
+
+      document.getElementById('ctClientName').textContent = t.clientName;
+      document.getElementById('ctTaskMeta').textContent = `${t.contentType} — ${t.topic} · ${t.platform}`;
+      document.getElementById('ctBody').innerHTML = `
+        <div class="grid grid-cols-2 gap-3">
+          <div class="bg-gray-800 rounded-lg p-3">
+            <p class="text-xs text-gray-500 mb-1">Client</p>
+            <p class="text-sm font-semibold text-white">${t.clientName}</p>
+            ${client?.pm ? `<p class="text-xs text-green-400 mt-0.5">Lead: ${client.pm}</p>` : ''}
+          </div>
+          <div class="bg-gray-800 rounded-lg p-3">
+            <p class="text-xs text-gray-500 mb-1">Due Date</p>
+            <p class="text-sm font-semibold ${due < 0 ? 'text-red-400' : due <= 2 ? 'text-orange-400' : 'text-white'}">${formatDate(t.dueDate)}</p>
+            <p class="text-xs ${due < 0 ? 'text-red-400' : 'text-gray-500'} mt-0.5">${due < 0 ? Math.abs(due)+'d overdue' : due === 0 ? 'Due today' : due+'d remaining'}</p>
+          </div>
+        </div>
+        <div>
+          <p class="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-3">What needs to change</p>
+          ${changeComments.length ? `
+            <div class="space-y-3">
+              ${changeComments.map(cm => `
+                <div class="flex gap-3 p-3 bg-red-500/5 border border-red-500/20 rounded-lg">
+                  <div class="w-7 h-7 rounded-full bg-red-500/20 flex items-center justify-center flex-shrink-0">
+                    <span class="text-xs font-bold text-red-400">${cm.by[0].toUpperCase()}</span>
+                  </div>
+                  <div>
+                    <p class="text-sm text-gray-200 leading-relaxed">${cm.text}</p>
+                    <p class="text-xs text-gray-600 mt-1">${cm.by} &bull; ${cm.date}</p>
+                  </div>
+                </div>`).join('')}
+            </div>` : `<p class="text-sm text-gray-600 italic">No change details added yet.</p>`}
+        </div>
+        ${t.brief ? `<div class="bg-gray-800 rounded-lg p-3"><p class="text-xs text-gray-500 mb-1">Original Brief</p><p class="text-sm text-gray-300">${t.brief}</p></div>` : ''}
+        <a href="tasks.html" class="btn-secondary w-full text-center text-sm block">
+          <i class="fa-solid fa-arrow-right mr-2"></i>Open in Tasks
+        </a>`;
+      document.getElementById('changeTicketModal').classList.add('open');
+    }
+
+    function closeChangeTicket() {
+      document.getElementById('changeTicketModal').classList.remove('open');
+    }
 
     function renderDashboard(user) {
       const allTasks = APP.tasks;
@@ -187,7 +255,7 @@
           <a href="clients.html" class="block mt-4 text-center text-xs text-indigo-400 hover:text-indigo-300">View all clients →</a>
         </div>
         <div class="bg-gray-900 rounded-xl border border-gray-800 p-5">
-          <div class="flex items-center justify-between mb-4"><h2 class="text-sm font-semibold text-white">Designer Queue</h2><span class="text-xs text-gray-500">Javeria</span></div>
+          <div class="flex items-center justify-between mb-4"><h2 class="text-sm font-semibold text-white">Designer Queue</h2><span class="text-xs text-gray-500">Faaiz</span></div>
           <div class="space-y-2">
             <div class="flex justify-between"><span class="text-xs text-gray-400">Waiting</span><span class="text-sm font-bold text-white">${allTasks.filter(t=>t.status==='with_designer').length} tasks</span></div>
             <div class="flex justify-between"><span class="text-xs text-gray-400">Changes needed</span><span class="text-sm font-bold text-red-400">${allTasks.filter(t=>t.status==='changes_requested').length}</span></div>
@@ -196,8 +264,49 @@
           <a href="pipeline.html" class="block mt-4 text-center text-xs text-indigo-400 hover:text-indigo-300">View pipeline →</a>
         </div>` : '';
 
+      // Change request tickets (visible to all, filtered by role)
+      const changeTasks = myTasks.filter(t => t.status === 'changes_requested');
+      const changeTicketsHTML = changeTasks.length ? `
+        <div class="bg-gray-900 rounded-xl border border-red-500/30 overflow-hidden">
+          <div class="flex items-center justify-between px-5 py-4 border-b border-red-500/20 bg-red-500/5">
+            <div class="flex items-center gap-2">
+              <i class="fa-solid fa-flag text-red-400 text-xs"></i>
+              <h2 class="text-sm font-semibold text-white">Change Requests</h2>
+              <span class="text-xs bg-red-500/20 text-red-400 border border-red-500/30 px-2 py-0.5 rounded-full font-medium">${changeTasks.length} open</span>
+            </div>
+            <a href="tasks.html" class="text-xs text-indigo-400 hover:text-indigo-300">View all tasks →</a>
+          </div>
+          <div class="divide-y divide-gray-800">
+            ${changeTasks.map(t => {
+              const changeComments = (t.comments||[]).filter(cm => cm.type === 'change_request' || (!cm.type && t.status === 'changes_requested'));
+              const latestNote = changeComments.length ? changeComments[changeComments.length-1].text : 'No details added';
+              const due = daysUntil(t.dueDate);
+              const dueColor = due < 0 ? 'text-red-400' : due <= 2 ? 'text-orange-400' : 'text-gray-500';
+              return `
+                <div class="flex items-start gap-4 px-5 py-4 hover:bg-gray-800/50 cursor-pointer transition-colors group" onclick="openChangeTicket('${t.id}')">
+                  <div class="w-8 h-8 rounded-lg bg-red-500/15 border border-red-500/30 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <i class="fa-solid fa-rotate-left text-red-400 text-xs"></i>
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-2 mb-0.5">
+                      <span class="text-sm font-semibold text-white">${t.clientName}</span>
+                      <span class="text-xs text-gray-500">·</span>
+                      <span class="text-xs text-gray-400">${t.contentType} — ${t.topic}</span>
+                    </div>
+                    <p class="text-xs text-red-300 truncate"><i class="fa-solid fa-comment-dots mr-1 text-red-500/60"></i>${latestNote}</p>
+                  </div>
+                  <div class="flex items-center gap-3 flex-shrink-0">
+                    <span class="text-xs ${dueColor}">${due < 0 ? Math.abs(due)+'d overdue' : due === 0 ? 'Due today' : 'Due in '+due+'d'}</span>
+                    <i class="fa-solid fa-chevron-right text-gray-600 text-xs group-hover:text-gray-400 transition-colors"></i>
+                  </div>
+                </div>`;
+            }).join('')}
+          </div>
+        </div>` : '';
+
       main.innerHTML = `
         <div class="grid grid-cols-4 gap-4">${statsHTML}</div>
+        ${changeTicketsHTML}
 
         <div class="grid grid-cols-3 gap-4">
           <div class="col-span-2 bg-gray-900 rounded-xl border border-gray-800 p-5">
