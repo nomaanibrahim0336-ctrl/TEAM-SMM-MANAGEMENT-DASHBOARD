@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>SMM-MANAGER — Admin Panel</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <link rel="stylesheet" href="assets/css/style.css"/>
+</head>
+<body class="bg-gray-950 text-gray-100 font-sans">
+  <div class="fixed top-0 left-0 h-full w-64 bg-gray-900 border-r border-gray-800 flex flex-col z-50">
+    <div class="flex items-center gap-3 px-6 py-5 border-b border-gray-800">
+      <div class="w-9 h-9 rounded-lg bg-indigo-600 flex items-center justify-center"><i class="fa-solid fa-layer-group text-white text-sm"></i></div>
+      <span class="text-white font-bold text-lg tracking-wide">SMM-MANAGER</span>
+    </div>
+    <nav class="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+      <a href="index.html" class="nav-link"><i class="fa-solid fa-gauge-high w-5"></i><span>Dashboard</span></a>
+      <a href="clients.html" class="nav-link"><i class="fa-solid fa-users w-5"></i><span>Clients</span></a>
+      <a href="pipeline.html" class="nav-link"><i class="fa-solid fa-kanban w-5"></i><span>Pipeline</span></a>
+      <a href="tasks.html" class="nav-link"><i class="fa-solid fa-list-check w-5"></i><span>Tasks</span></a>
+      <a href="team.html" class="nav-link"><i class="fa-solid fa-people-group w-5"></i><span>Team</span></a>
+      <a href="analytics.html" class="nav-link"><i class="fa-solid fa-chart-line w-5"></i><span>Analytics</span></a>
+      <div class="pt-4 pb-1 px-3"><p class="text-xs text-gray-600 uppercase tracking-widest font-semibold">Admin</p></div>
+      <a href="admin.html" class="nav-link active"><i class="fa-solid fa-shield-halved w-5"></i><span>Admin Panel</span></a>
+      <a href="settings.html" class="nav-link"><i class="fa-solid fa-gear w-5"></i><span>Settings</span></a>
+    </nav>
+    <div class="px-4 py-4 border-t border-gray-800">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-full bg-indigo-700 flex items-center justify-center text-sm font-bold">A</div>
+        <div class="flex-1 min-w-0"><p class="text-sm font-semibold text-white truncate">Admin</p><p class="text-xs text-gray-500 truncate">admin@smm.com</p></div>
+        <a href="login.html" class="text-gray-500 hover:text-red-400 transition-colors"><i class="fa-solid fa-right-from-bracket text-sm"></i></a>
+      </div>
+    </div>
+  </div>
+
+  <div class="ml-64 min-h-screen flex flex-col">
+    <header class="sticky top-0 z-40 bg-gray-950/80 backdrop-blur border-b border-gray-800 px-8 py-4 flex items-center justify-between">
+      <div>
+        <h1 class="text-xl font-bold text-white">Admin Panel</h1>
+        <p class="text-xs text-gray-500 mt-0.5">Manage team members, roles & access</p>
+      </div>
+      <button onclick="openAddMember()" class="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors">
+        <i class="fa-solid fa-user-plus text-xs"></i> Add Member
+      </button>
+    </header>
+
+    <main class="flex-1 px-8 py-6 space-y-6">
+
+      <!-- Role Summary -->
+      <div class="grid grid-cols-4 gap-4" id="roleSummary"></div>
+
+      <!-- Team Members Table -->
+      <div class="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+        <div class="px-5 py-4 border-b border-gray-800 flex items-center justify-between">
+          <h2 class="text-sm font-semibold text-white">Team Members</h2>
+          <span class="text-xs text-gray-500" id="memberCount"></span>
+        </div>
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Member</th>
+              <th>Email</th>
+              <th>Role</th>
+              <th>Active Tasks</th>
+              <th>Password</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="teamTableBody"></tbody>
+        </table>
+      </div>
+
+      <!-- Permissions Reference -->
+      <div class="bg-gray-900 border border-gray-800 rounded-xl p-5">
+        <h2 class="text-sm font-semibold text-white mb-4">Role Permissions Reference</h2>
+        <div class="grid grid-cols-4 gap-4">
+          ${[
+            { role:'Admin', color:'text-indigo-400', bg:'bg-indigo-500/10 border-indigo-500/20', perms:['Full system access','Manage team members','Reset all passwords','View all data','Change any task/status','System settings'] },
+            { role:'Project Manager', color:'text-green-400', bg:'bg-green-500/10 border-green-500/20', perms:['Create tasks','Approve / reject tasks','Request changes','View all clients & tasks','Cannot manage team'] },
+            { role:'Creator', color:'text-blue-400', bg:'bg-blue-500/10 border-blue-500/20', perms:['View assigned tasks','Move tasks to designer','Add comments & notes','Cannot manage clients','Cannot approve tasks'] },
+            { role:'Designer', color:'text-pink-400', bg:'bg-pink-500/10 border-pink-500/20', perms:['View design queue','Mark tasks complete','Request changes','Add comments','Cannot create tasks'] },
+          ].map(r => `
+            <div class="border ${r.bg} rounded-xl p-4">
+              <p class="text-sm font-semibold ${r.color} mb-3">${r.role}</p>
+              <ul class="space-y-1.5">
+                ${r.perms.map(p => `<li class="flex items-start gap-2 text-xs text-gray-400"><i class="fa-solid fa-check text-green-500 mt-0.5 flex-shrink-0"></i>${p}</li>`).join('')}
+              </ul>
+            </div>`).join('')}
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- ADD / EDIT MEMBER MODAL -->
+  <div id="memberModal" class="modal-overlay" onclick="if(event.target===this)closeMemberModal()">
+    <div class="modal-box">
+      <div class="flex items-center justify-between px-6 py-5 border-b border-gray-800">
+        <h2 class="text-base font-semibold text-white" id="memberModalTitle">Add Team Member</h2>
+        <button onclick="closeMemberModal()" class="text-gray-500 hover:text-gray-300"><i class="fa-solid fa-xmark text-lg"></i></button>
+      </div>
+      <div class="p-6 space-y-4">
+        <input type="hidden" id="memberId"/>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="form-label">Full Name *</label>
+            <input id="memberName" type="text" class="form-input" placeholder="e.g. Javeria"/>
+          </div>
+          <div>
+            <label class="form-label">Email *</label>
+            <input id="memberEmail" type="email" class="form-input" placeholder="email@smm.com"/>
+          </div>
+        </div>
+        <div>
+          <label class="form-label">Role *</label>
+          <select id="memberRole" class="form-input">
+            <option value="admin">Admin</option>
+            <option value="project_manager">Project Manager</option>
+            <option value="creator">Creator</option>
+            <option value="designer">Designer</option>
+          </select>
+        </div>
+        <div>
+          <label class="form-label" id="passwordLabel">Password *</label>
+          <div class="relative">
+            <input id="memberPassword" type="password" class="form-input pr-10" placeholder="Set password"/>
+            <button type="button" onclick="toggleMemberPw()" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300">
+              <i id="memberEyeIcon" class="fa-solid fa-eye text-sm"></i>
+            </button>
+          </div>
+          <p class="text-xs text-gray-600 mt-1" id="passwordHint">Leave blank to keep existing password when editing</p>
+        </div>
+        <div id="confirmPwWrap">
+          <label class="form-label">Confirm Password</label>
+          <input id="memberPasswordConfirm" type="password" class="form-input" placeholder="Repeat password"/>
+        </div>
+      </div>
+      <div class="flex justify-end gap-3 px-6 py-4 border-t border-gray-800">
+        <button onclick="closeMemberModal()" class="btn-secondary">Cancel</button>
+        <button onclick="saveMember()" class="btn-primary" id="saveMemberBtn">Add Member</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CHANGE PASSWORD MODAL -->
+  <div id="pwModal" class="modal-overlay" onclick="if(event.target===this)closePwModal()">
+    <div class="modal-box" style="max-width:420px">
+      <div class="flex items-center justify-between px-6 py-5 border-b border-gray-800">
+        <h2 class="text-base font-semibold text-white">Change Password</h2>
+        <button onclick="closePwModal()" class="text-gray-500 hover:text-gray-300"><i class="fa-solid fa-xmark text-lg"></i></button>
+      </div>
+      <div class="p-6 space-y-4">
+        <input type="hidden" id="pwUserId"/>
+        <p class="text-sm text-gray-400">Changing password for: <span id="pwUserName" class="text-white font-semibold"></span></p>
+        <div>
+          <label class="form-label">New Password *</label>
+          <div class="relative">
+            <input id="newPw" type="password" class="form-input pr-10" placeholder="New password"/>
+            <button type="button" onclick="togglePw('newPw','pwEye1')" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300">
+              <i id="pwEye1" class="fa-solid fa-eye text-sm"></i>
+            </button>
+          </div>
+        </div>
+        <div>
+          <label class="form-label">Confirm Password *</label>
+          <div class="relative">
+            <input id="confirmPw" type="password" class="form-input pr-10" placeholder="Confirm password"/>
+            <button type="button" onclick="togglePw('confirmPw','pwEye2')" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300">
+              <i id="pwEye2" class="fa-solid fa-eye text-sm"></i>
+            </button>
+          </div>
+        </div>
+        <div id="pwError" class="hidden text-xs text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">
+          Passwords do not match
+        </div>
+      </div>
+      <div class="flex justify-end gap-3 px-6 py-4 border-t border-gray-800">
+        <button onclick="closePwModal()" class="btn-secondary">Cancel</button>
+        <button onclick="savePassword()" class="btn-primary">Update Password</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="assets/js/app.js"></script>
+  <script>
+    const ROLE_CONFIG = {
+      admin:           { label:'Admin',           color:'bg-indigo-500/15 text-indigo-400 border-indigo-500/30',  avatarBg:'bg-indigo-700',  icon:'fa-shield-halved' },
+      creator:         { label:'Creator',         color:'bg-blue-500/15 text-blue-400 border-blue-500/30',        avatarBg:'bg-blue-700',    icon:'fa-pen-nib' },
+      designer:        { label:'Designer',        color:'bg-pink-500/15 text-pink-400 border-pink-500/30',        avatarBg:'bg-pink-700',    icon:'fa-palette' },
+      project_manager: { label:'Project Manager', color:'bg-green-500/15 text-green-400 border-green-500/30',     avatarBg:'bg-green-700',   icon:'fa-user-tie' },
+    };
+
+    function renderAdmin() {
+      const team = APP.team;
+      // Role summary
+      const roles = ['admin','project_manager','creator','designer'];
+      document.getElementById('roleSummary').innerHTML = roles.map(r => {
+        const cfg = ROLE_CONFIG[r];
+        const count = team.filter(u => u.role === r).length;
+        return `
+          <div class="bg-gray-900 border border-gray-800 rounded-xl p-5 flex items-center gap-4">
+            <div class="w-10 h-10 rounded-xl ${cfg.avatarBg.replace('700','600')}/20 flex items-center justify-center">
+              <i class="fa-solid ${cfg.icon} ${cfg.color.split(' ')[1]} text-sm"></i>
+            </div>
+            <div>
+              <p class="text-2xl font-bold text-white">${count}</p>
+              <p class="text-xs text-gray-500">${cfg.label}${count !== 1 ? 's' : ''}</p>
+            </div>
+          </div>`;
+      }).join('');
+
+      document.getElementById('memberCount').textContent = `${team.length} members`;
+
+      // Table
+      document.getElementById('teamTableBody').innerHTML = team.map(u => {
+        const cfg = ROLE_CONFIG[u.role] || ROLE_CONFIG.creator;
+        const activeTasks = APP.tasks.filter(t => (t.assignedTo === u.name || t.designer === u.name) && t.status !== 'posted').length;
+        return `
+          <tr>
+            <td>
+              <div class="flex items-center gap-3">
+                <div class="avatar ${cfg.avatarBg} text-sm">${u.avatar || u.name[0]}</div>
+                <span class="font-medium text-white">${u.name}</span>
+              </div>
+            </td>
+            <td class="text-gray-400">${u.email}</td>
+            <td><span class="status-badge ${cfg.color}">${cfg.label}</span></td>
+            <td><span class="font-semibold ${activeTasks > 5 ? 'text-orange-400' : 'text-white'}">${activeTasks}</span></td>
+            <td>
+              <button onclick="openPwModal('${u.id}')" class="flex items-center gap-1.5 text-xs text-gray-500 hover:text-indigo-400 transition-colors bg-gray-800 hover:bg-gray-700 px-3 py-1.5 rounded-lg">
+                <i class="fa-solid fa-key text-xs"></i> Change
+              </button>
+            </td>
+            <td>
+              <div class="flex gap-2">
+                <button onclick="editMember('${u.id}')" class="text-gray-500 hover:text-indigo-400 transition-colors p-1.5 hover:bg-gray-800 rounded-lg">
+                  <i class="fa-solid fa-pen text-xs"></i>
+                </button>
+                ${u.role !== 'admin' ? `<button onclick="deleteMember('${u.id}')" class="text-gray-500 hover:text-red-400 transition-colors p-1.5 hover:bg-gray-800 rounded-lg"><i class="fa-solid fa-trash text-xs"></i></button>` : ''}
+              </div>
+            </td>
+          </tr>`;
+      }).join('');
+    }
+
+    // Add / Edit Member
+    function openAddMember() {
+      document.getElementById('memberId').value = '';
+      document.getElementById('memberModalTitle').textContent = 'Add Team Member';
+      document.getElementById('saveMemberBtn').textContent = 'Add Member';
+      document.getElementById('memberName').value = '';
+      document.getElementById('memberEmail').value = '';
+      document.getElementById('memberRole').value = 'creator';
+      document.getElementById('memberPassword').value = '';
+      document.getElementById('memberPasswordConfirm').value = '';
+      document.getElementById('passwordHint').classList.add('hidden');
+      document.getElementById('memberModal').classList.add('open');
+    }
+
+    function editMember(id) {
+      const u = APP.team.find(u => u.id === id);
+      if (!u) return;
+      document.getElementById('memberId').value = u.id;
+      document.getElementById('memberModalTitle').textContent = 'Edit Member';
+      document.getElementById('saveMemberBtn').textContent = 'Save Changes';
+      document.getElementById('memberName').value = u.name;
+      document.getElementById('memberEmail').value = u.email;
+      document.getElementById('memberRole').value = u.role;
+      document.getElementById('memberPassword').value = '';
+      document.getElementById('memberPasswordConfirm').value = '';
+      document.getElementById('passwordHint').classList.remove('hidden');
+      document.getElementById('memberModal').classList.add('open');
+    }
+
+    function closeMemberModal() { document.getElementById('memberModal').classList.remove('open'); }
+
+    function saveMember() {
+      const id = document.getElementById('memberId').value;
+      const name = document.getElementById('memberName').value.trim();
+      const email = document.getElementById('memberEmail').value.trim();
+      const role = document.getElementById('memberRole').value;
+      const pw = document.getElementById('memberPassword').value;
+      const cpw = document.getElementById('memberPasswordConfirm').value;
+      if (!name || !email) { alert('Name and email are required.'); return; }
+      if (pw && pw !== cpw) { alert('Passwords do not match.'); return; }
+      if (id) {
+        const idx = APP.team.findIndex(u => u.id === id);
+        if (idx !== -1) {
+          APP.team[idx].name = name;
+          APP.team[idx].email = email;
+          APP.team[idx].role = role;
+          APP.team[idx].avatar = name[0].toUpperCase();
+          if (pw) APP.team[idx].password = pw;
+        }
+      } else {
+        if (!pw) { alert('Password is required for new members.'); return; }
+        APP.team.push({ id: 'u' + Date.now(), name, email, role, password: pw, avatar: name[0].toUpperCase(), color: 'bg-gray-700' });
+      }
+      saveData(); renderAdmin(); closeMemberModal();
+    }
+
+    function deleteMember(id) {
+      if (!confirm('Remove this team member?')) return;
+      APP.team = APP.team.filter(u => u.id !== id);
+      saveData(); renderAdmin();
+    }
+
+    // Change Password
+    function openPwModal(userId) {
+      const u = APP.team.find(u => u.id === userId);
+      if (!u) return;
+      document.getElementById('pwUserId').value = userId;
+      document.getElementById('pwUserName').textContent = u.name;
+      document.getElementById('newPw').value = '';
+      document.getElementById('confirmPw').value = '';
+      document.getElementById('pwError').classList.add('hidden');
+      document.getElementById('pwModal').classList.add('open');
+    }
+    function closePwModal() { document.getElementById('pwModal').classList.remove('open'); }
+
+    function savePassword() {
+      const id = document.getElementById('pwUserId').value;
+      const pw = document.getElementById('newPw').value;
+      const cpw = document.getElementById('confirmPw').value;
+      if (!pw) { alert('Enter a new password.'); return; }
+      if (pw !== cpw) { document.getElementById('pwError').classList.remove('hidden'); return; }
+      const idx = APP.team.findIndex(u => u.id === id);
+      if (idx !== -1) { APP.team[idx].password = pw; }
+      saveData();
+      closePwModal();
+      showToast('Password updated successfully');
+    }
+
+    function toggleMemberPw() {
+      const i = document.getElementById('memberPassword');
+      const e = document.getElementById('memberEyeIcon');
+      i.type = i.type === 'password' ? 'text' : 'password';
+      e.className = i.type === 'password' ? 'fa-solid fa-eye text-sm' : 'fa-solid fa-eye-slash text-sm';
+    }
+
+    function togglePw(inputId, iconId) {
+      const i = document.getElementById(inputId);
+      const e = document.getElementById(iconId);
+      i.type = i.type === 'password' ? 'text' : 'password';
+      e.className = i.type === 'password' ? 'fa-solid fa-eye text-sm' : 'fa-solid fa-eye-slash text-sm';
+    }
+
+    function showToast(msg) {
+      const t = document.createElement('div');
+      t.className = 'fixed bottom-6 right-6 bg-green-600 text-white text-sm font-medium px-5 py-3 rounded-xl shadow-lg z-50 fade-in';
+      t.innerHTML = `<i class="fa-solid fa-circle-check mr-2"></i>${msg}`;
+      document.body.appendChild(t);
+      setTimeout(() => t.remove(), 3000);
+    }
+
+    document.addEventListener('DOMContentLoaded', renderAdmin);
+  </script>
+</body>
+</html>

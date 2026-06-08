@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>SMM-MANAGER</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <link rel="stylesheet" href="assets/css/style.css"/>
+</head>
+<body class="bg-gray-950 text-gray-100 font-sans">
+
+  <!-- SIDEBAR -->
+  <div id="sidebar" class="fixed top-0 left-0 h-full w-64 bg-gray-900 border-r border-gray-800 flex flex-col z-50 transition-all duration-300">
+    <!-- Logo -->
+    <div class="flex items-center gap-3 px-6 py-5 border-b border-gray-800">
+      <div class="w-9 h-9 rounded-lg bg-indigo-600 flex items-center justify-center">
+        <i class="fa-solid fa-layer-group text-white text-sm"></i>
+      </div>
+      <span class="text-white font-bold text-lg tracking-wide">SMM-MANAGER</span>
+    </div>
+
+    <!-- Nav Links -->
+    <nav class="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+      <a href="index.html" class="nav-link active" data-page="dashboard">
+        <i class="fa-solid fa-gauge-high w-5"></i>
+        <span>Dashboard</span>
+      </a>
+      <a href="clients.html" class="nav-link" data-page="clients">
+        <i class="fa-solid fa-users w-5"></i>
+        <span>Clients</span>
+      </a>
+      <a href="pipeline.html" class="nav-link" data-page="pipeline">
+        <i class="fa-solid fa-kanban w-5"></i>
+        <span>Pipeline</span>
+      </a>
+      <a href="tasks.html" class="nav-link" data-page="tasks">
+        <i class="fa-solid fa-list-check w-5"></i>
+        <span>Tasks</span>
+      </a>
+      <a href="team.html" class="nav-link" data-page="team">
+        <i class="fa-solid fa-people-group w-5"></i>
+        <span>Team</span>
+      </a>
+      <a href="analytics.html" class="nav-link" data-page="analytics">
+        <i class="fa-solid fa-chart-line w-5"></i>
+        <span>Analytics</span>
+      </a>
+
+      <div class="pt-4 pb-1 px-3">
+        <p class="text-xs text-gray-600 uppercase tracking-widest font-semibold">Admin</p>
+      </div>
+      <a href="admin.html" class="nav-link" data-page="admin">
+        <i class="fa-solid fa-shield-halved w-5"></i>
+        <span>Admin Panel</span>
+      </a>
+      <a href="settings.html" class="nav-link" data-page="settings">
+        <i class="fa-solid fa-gear w-5"></i>
+        <span>Settings</span>
+      </a>
+    </nav>
+
+    <!-- User Info -->
+    <div class="px-4 py-4 border-t border-gray-800">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-full bg-indigo-700 flex items-center justify-center text-sm font-bold">A</div>
+        <div class="flex-1 min-w-0">
+          <p class="text-sm font-semibold text-white truncate">Admin</p>
+          <p class="text-xs text-gray-500 truncate">admin@smm.com</p>
+        </div>
+        <a href="login.html" class="text-gray-500 hover:text-red-400 transition-colors">
+          <i class="fa-solid fa-right-from-bracket text-sm"></i>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN CONTENT -->
+  <div class="ml-64 min-h-screen flex flex-col">
+
+    <!-- TOP BAR -->
+    <header class="sticky top-0 z-40 bg-gray-950/80 backdrop-blur border-b border-gray-800 px-8 py-4 flex items-center justify-between">
+      <div>
+        <h1 class="text-xl font-bold text-white">Dashboard</h1>
+        <p class="text-xs text-gray-500 mt-0.5">Welcome back, Admin — here's what's happening today</p>
+      </div>
+      <div class="flex items-center gap-3">
+        <span class="text-xs text-gray-500 bg-gray-800 px-3 py-1.5 rounded-full" id="currentDate"></span>
+        <button class="relative p-2 rounded-lg bg-gray-800 hover:bg-gray-700 transition-colors">
+          <i class="fa-solid fa-bell text-gray-400 text-sm"></i>
+          <span class="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+        </button>
+        <a href="tasks.html">
+          <button class="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors">
+            <i class="fa-solid fa-plus text-xs"></i>
+            New Task
+          </button>
+        </a>
+      </div>
+    </header>
+
+    <!-- PAGE BODY -->
+    <main class="flex-1 px-8 py-6 space-y-6">
+
+      <!-- STAT CARDS -->
+      <div class="grid grid-cols-4 gap-4">
+        <div class="stat-card border-l-indigo-500">
+          <div class="flex items-center justify-between mb-3">
+            <p class="text-xs text-gray-500 uppercase tracking-wider font-medium">Active Clients</p>
+            <div class="w-8 h-8 rounded-lg bg-indigo-500/10 flex items-center justify-center">
+              <i class="fa-solid fa-users text-indigo-400 text-xs"></i>
+            </div>
+          </div>
+          <p class="text-3xl font-bold text-white">24</p>
+          <p class="text-xs text-green-400 mt-1"><i class="fa-solid fa-arrow-trend-up mr-1"></i>+3 this month</p>
+        </div>
+        <div class="stat-card border-l-yellow-500">
+          <div class="flex items-center justify-between mb-3">
+            <p class="text-xs text-gray-500 uppercase tracking-wider font-medium">Tasks In Pipeline</p>
+            <div class="w-8 h-8 rounded-lg bg-yellow-500/10 flex items-center justify-center">
+              <i class="fa-solid fa-spinner text-yellow-400 text-xs"></i>
+            </div>
+          </div>
+          <p class="text-3xl font-bold text-white">18</p>
+          <p class="text-xs text-yellow-400 mt-1"><i class="fa-solid fa-clock mr-1"></i>5 due today</p>
+        </div>
+        <div class="stat-card border-l-orange-500">
+          <div class="flex items-center justify-between mb-3">
+            <p class="text-xs text-gray-500 uppercase tracking-wider font-medium">Pending Approval</p>
+            <div class="w-8 h-8 rounded-lg bg-orange-500/10 flex items-center justify-center">
+              <i class="fa-solid fa-hourglass-half text-orange-400 text-xs"></i>
+            </div>
+          </div>
+          <p class="text-3xl font-bold text-white">6</p>
+          <p class="text-xs text-orange-400 mt-1"><i class="fa-solid fa-triangle-exclamation mr-1"></i>2 overdue</p>
+        </div>
+        <div class="stat-card border-l-green-500">
+          <div class="flex items-center justify-between mb-3">
+            <p class="text-xs text-gray-500 uppercase tracking-wider font-medium">Posted This Week</p>
+            <div class="w-8 h-8 rounded-lg bg-green-500/10 flex items-center justify-center">
+              <i class="fa-solid fa-circle-check text-green-400 text-xs"></i>
+            </div>
+          </div>
+          <p class="text-3xl font-bold text-white">12</p>
+          <p class="text-xs text-green-400 mt-1"><i class="fa-solid fa-arrow-trend-up mr-1"></i>93% completion rate</p>
+        </div>
+      </div>
+
+      <!-- PIPELINE SNAPSHOT + ALERTS -->
+      <div class="grid grid-cols-3 gap-4">
+
+        <!-- Pipeline Snapshot -->
+        <div class="col-span-2 bg-gray-900 rounded-xl border border-gray-800 p-5">
+          <div class="flex items-center justify-between mb-4">
+            <h2 class="text-sm font-semibold text-white">Pipeline Snapshot</h2>
+            <a href="pipeline.html" class="text-xs text-indigo-400 hover:text-indigo-300">View Kanban →</a>
+          </div>
+          <div class="grid grid-cols-4 gap-3">
+            <div class="pipeline-stage">
+              <div class="flex items-center gap-2 mb-2">
+                <span class="w-2 h-2 rounded-full bg-blue-400"></span>
+                <span class="text-xs text-gray-400 font-medium">New</span>
+              </div>
+              <p class="text-2xl font-bold text-white">5</p>
+              <p class="text-xs text-gray-600 mt-1">tasks</p>
+            </div>
+            <div class="pipeline-stage">
+              <div class="flex items-center gap-2 mb-2">
+                <span class="w-2 h-2 rounded-full bg-purple-400"></span>
+                <span class="text-xs text-gray-400 font-medium">With Designer</span>
+              </div>
+              <p class="text-2xl font-bold text-white">8</p>
+              <p class="text-xs text-gray-600 mt-1">tasks</p>
+            </div>
+            <div class="pipeline-stage">
+              <div class="flex items-center gap-2 mb-2">
+                <span class="w-2 h-2 rounded-full bg-yellow-400"></span>
+                <span class="text-xs text-gray-400 font-medium">Pending Review</span>
+              </div>
+              <p class="text-2xl font-bold text-white">6</p>
+              <p class="text-xs text-gray-600 mt-1">tasks</p>
+            </div>
+            <div class="pipeline-stage">
+              <div class="flex items-center gap-2 mb-2">
+                <span class="w-2 h-2 rounded-full bg-green-400"></span>
+                <span class="text-xs text-gray-400 font-medium">Ready to Post</span>
+              </div>
+              <p class="text-2xl font-bold text-white">3</p>
+              <p class="text-xs text-gray-600 mt-1">tasks</p>
+            </div>
+          </div>
+
+          <!-- Recent Tasks -->
+          <div class="mt-5 space-y-2">
+            <p class="text-xs text-gray-500 uppercase tracking-wider font-medium mb-3">Recent Activity</p>
+            <div class="task-row">
+              <div class="flex items-center gap-3 flex-1 min-w-0">
+                <div class="w-8 h-8 rounded-lg bg-purple-500/20 flex items-center justify-center flex-shrink-0">
+                  <i class="fa-solid fa-image text-purple-400 text-xs"></i>
+                </div>
+                <div class="min-w-0">
+                  <p class="text-sm font-medium text-white truncate">David Thomas — Video Post</p>
+                  <p class="text-xs text-gray-500">Instagram · Due Today</p>
+                </div>
+              </div>
+              <span class="status-badge bg-purple-500/15 text-purple-400 border-purple-500/30">With Designer</span>
+            </div>
+            <div class="task-row">
+              <div class="flex items-center gap-3 flex-1 min-w-0">
+                <div class="w-8 h-8 rounded-lg bg-yellow-500/20 flex items-center justify-center flex-shrink-0">
+                  <i class="fa-solid fa-film text-yellow-400 text-xs"></i>
+                </div>
+                <div class="min-w-0">
+                  <p class="text-sm font-medium text-white truncate">Karen Reilly — Carousel</p>
+                  <p class="text-xs text-gray-500">Instagram · Due Tomorrow</p>
+                </div>
+              </div>
+              <span class="status-badge bg-yellow-500/15 text-yellow-400 border-yellow-500/30">Pending Review</span>
+            </div>
+            <div class="task-row">
+              <div class="flex items-center gap-3 flex-1 min-w-0">
+                <div class="w-8 h-8 rounded-lg bg-blue-500/20 flex items-center justify-center flex-shrink-0">
+                  <i class="fa-solid fa-photo-film text-blue-400 text-xs"></i>
+                </div>
+                <div class="min-w-0">
+                  <p class="text-sm font-medium text-white truncate">Craig Sutton — Story Pack</p>
+                  <p class="text-xs text-gray-500">Instagram · Due in 2 days</p>
+                </div>
+              </div>
+              <span class="status-badge bg-blue-500/15 text-blue-400 border-blue-500/30">New</span>
+            </div>
+            <div class="task-row">
+              <div class="flex items-center gap-3 flex-1 min-w-0">
+                <div class="w-8 h-8 rounded-lg bg-green-500/20 flex items-center justify-center flex-shrink-0">
+                  <i class="fa-solid fa-circle-check text-green-400 text-xs"></i>
+                </div>
+                <div class="min-w-0">
+                  <p class="text-sm font-medium text-white truncate">Julie Suarez — Reels</p>
+                  <p class="text-xs text-gray-500">Instagram · Posted yesterday</p>
+                </div>
+              </div>
+              <span class="status-badge bg-green-500/15 text-green-400 border-green-500/30">Posted</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Alerts Panel -->
+        <div class="space-y-4">
+          <!-- Contract Alerts -->
+          <div class="bg-gray-900 rounded-xl border border-gray-800 p-5">
+            <div class="flex items-center justify-between mb-4">
+              <h2 class="text-sm font-semibold text-white">Contract Alerts</h2>
+              <span class="text-xs bg-red-500/15 text-red-400 border border-red-500/30 px-2 py-0.5 rounded-full">3 ending soon</span>
+            </div>
+            <div class="space-y-3">
+              <div class="flex items-start gap-3">
+                <span class="w-2 h-2 rounded-full bg-red-500 mt-1.5 flex-shrink-0"></span>
+                <div>
+                  <p class="text-sm font-medium text-white">Bob Ramieh</p>
+                  <p class="text-xs text-red-400">Ends in 12 days</p>
+                </div>
+              </div>
+              <div class="flex items-start gap-3">
+                <span class="w-2 h-2 rounded-full bg-orange-400 mt-1.5 flex-shrink-0"></span>
+                <div>
+                  <p class="text-sm font-medium text-white">Julie Suarez</p>
+                  <p class="text-xs text-orange-400">Ends in 28 days</p>
+                </div>
+              </div>
+              <div class="flex items-start gap-3">
+                <span class="w-2 h-2 rounded-full bg-yellow-400 mt-1.5 flex-shrink-0"></span>
+                <div>
+                  <p class="text-sm font-medium text-white">Artis Tran</p>
+                  <p class="text-xs text-yellow-400">Ends in 45 days</p>
+                </div>
+              </div>
+            </div>
+            <a href="clients.html" class="block mt-4 text-center text-xs text-indigo-400 hover:text-indigo-300">View all clients →</a>
+          </div>
+
+          <!-- Designer Queue -->
+          <div class="bg-gray-900 rounded-xl border border-gray-800 p-5">
+            <div class="flex items-center justify-between mb-4">
+              <h2 class="text-sm font-semibold text-white">Designer Queue</h2>
+              <span class="text-xs text-gray-500">Javeria</span>
+            </div>
+            <div class="space-y-2">
+              <div class="flex justify-between items-center">
+                <span class="text-xs text-gray-400">Waiting</span>
+                <span class="text-sm font-bold text-white">8 tasks</span>
+              </div>
+              <div class="flex justify-between items-center">
+                <span class="text-xs text-gray-400">Avg wait time</span>
+                <span class="text-sm font-bold text-yellow-400">2.1 days</span>
+              </div>
+              <div class="flex justify-between items-center">
+                <span class="text-xs text-gray-400">Longest wait</span>
+                <span class="text-sm font-bold text-red-400">4 days</span>
+              </div>
+            </div>
+            <a href="pipeline.html" class="block mt-4 text-center text-xs text-indigo-400 hover:text-indigo-300">View queue →</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- MY TASKS + BUDGET -->
+      <div class="grid grid-cols-3 gap-4">
+        <!-- My Tasks -->
+        <div class="col-span-2 bg-gray-900 rounded-xl border border-gray-800 p-5">
+          <div class="flex items-center justify-between mb-4">
+            <h2 class="text-sm font-semibold text-white">My Tasks Today</h2>
+            <a href="tasks.html" class="text-xs text-indigo-400 hover:text-indigo-300">View all →</a>
+          </div>
+          <div class="space-y-2" id="myTasksList">
+            <div class="task-row group cursor-pointer" onclick="window.location='tasks.html'">
+              <div class="flex items-center gap-3 flex-1 min-w-0">
+                <span class="priority-dot bg-red-500"></span>
+                <div class="min-w-0">
+                  <p class="text-sm font-medium text-white">Karen Reilly — Carousel</p>
+                  <p class="text-xs text-gray-500">New request · High priority</p>
+                </div>
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="status-badge bg-blue-500/15 text-blue-400 border-blue-500/30">New</span>
+                <i class="fa-solid fa-chevron-right text-gray-600 text-xs group-hover:text-gray-400 transition-colors"></i>
+              </div>
+            </div>
+            <div class="task-row group cursor-pointer" onclick="window.location='tasks.html'">
+              <div class="flex items-center gap-3 flex-1 min-w-0">
+                <span class="priority-dot bg-yellow-500"></span>
+                <div class="min-w-0">
+                  <p class="text-sm font-medium text-white">David Thomas — Video Post</p>
+                  <p class="text-xs text-gray-500">With Designer · 2 days</p>
+                </div>
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="status-badge bg-purple-500/15 text-purple-400 border-purple-500/30">Designer</span>
+                <i class="fa-solid fa-chevron-right text-gray-600 text-xs group-hover:text-gray-400 transition-colors"></i>
+              </div>
+            </div>
+            <div class="task-row group cursor-pointer" onclick="window.location='tasks.html'">
+              <div class="flex items-center gap-3 flex-1 min-w-0">
+                <span class="priority-dot bg-green-500"></span>
+                <div class="min-w-0">
+                  <p class="text-sm font-medium text-white">Craig Sutton — Story Pack</p>
+                  <p class="text-xs text-gray-500">Pending review · Waiting</p>
+                </div>
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="status-badge bg-yellow-500/15 text-yellow-400 border-yellow-500/30">Review</span>
+                <i class="fa-solid fa-chevron-right text-gray-600 text-xs group-hover:text-gray-400 transition-colors"></i>
+              </div>
+            </div>
+            <div class="task-row group cursor-pointer" onclick="window.location='tasks.html'">
+              <div class="flex items-center gap-3 flex-1 min-w-0">
+                <span class="priority-dot bg-red-500"></span>
+                <div class="min-w-0">
+                  <p class="text-sm font-medium text-white">Leo Patterson — Video</p>
+                  <p class="text-xs text-gray-500">Changes requested · Urgent</p>
+                </div>
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="status-badge bg-red-500/15 text-red-400 border-red-500/30">Changes</span>
+                <i class="fa-solid fa-chevron-right text-gray-600 text-xs group-hover:text-gray-400 transition-colors"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Budget Summary -->
+        <div class="bg-gray-900 rounded-xl border border-gray-800 p-5">
+          <div class="flex items-center justify-between mb-4">
+            <h2 class="text-sm font-semibold text-white">Budget Overview</h2>
+            <span class="text-xs text-gray-500">June 2025</span>
+          </div>
+          <div class="space-y-4">
+            <div>
+              <div class="flex justify-between mb-1">
+                <span class="text-xs text-gray-400">Total Budget</span>
+                <span class="text-xs font-semibold text-white">PKR 850K</span>
+              </div>
+              <div class="w-full bg-gray-800 rounded-full h-1.5">
+                <div class="bg-indigo-500 h-1.5 rounded-full" style="width: 61%"></div>
+              </div>
+              <p class="text-xs text-gray-600 mt-1">61% allocated</p>
+            </div>
+            <div class="pt-2 border-t border-gray-800 space-y-2">
+              <div class="flex justify-between">
+                <span class="text-xs text-gray-500">Allocated</span>
+                <span class="text-xs text-white font-medium">PKR 520K</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-xs text-gray-500">Remaining</span>
+                <span class="text-xs text-green-400 font-medium">PKR 330K</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-xs text-gray-500">Active Clients</span>
+                <span class="text-xs text-white font-medium">24</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <script src="assets/js/app.js"></script>
+</body>
+</html>
