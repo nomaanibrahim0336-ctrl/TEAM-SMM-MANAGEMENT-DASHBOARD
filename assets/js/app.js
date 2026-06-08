@@ -279,14 +279,16 @@ function showPostedDateModal(taskId, onConfirm) {
         </button>
       </div>
       <div class="p-6 space-y-4">
-        <p class="text-sm text-gray-400">When was this content posted? You can leave it blank if you don't know yet.</p>
-        <div>
-          <label class="form-label">Date Posted</label>
-          <input id="_postedDateInput" type="date" class="form-input" value="${today}" max="${today}"/>
+        <div class="flex items-center gap-3 bg-green-500/10 border border-green-500/20 rounded-lg px-4 py-3">
+          <i class="fa-solid fa-calendar-check text-green-400"></i>
+          <div>
+            <p class="text-sm font-medium text-white">Posted Date: <span class="text-green-400">${new Date().toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric'})}</span></p>
+            <p class="text-xs text-gray-500 mt-0.5">Automatically set to today</p>
+          </div>
         </div>
         <div>
           <label class="form-label">Posted Time (optional)</label>
-          <input id="_postedTimeInput" type="time" class="form-input" placeholder="e.g. 09:30"/>
+          <input id="_postedTimeInput" type="time" class="form-input"/>
         </div>
         <div>
           <label class="form-label">Post Link / Notes (optional)</label>
@@ -304,11 +306,10 @@ function showPostedDateModal(taskId, onConfirm) {
   document.body.appendChild(overlay);
 
   document.getElementById('_postedConfirmBtn').onclick = () => {
-    const date = document.getElementById('_postedDateInput').value || today;
     const time = document.getElementById('_postedTimeInput').value || '';
     const note = document.getElementById('_postedNoteInput').value.trim() || '';
     overlay.remove();
-    onConfirm(date, time, note);
+    onConfirm(today, time, note);
   };
 
   // Close on overlay click
