@@ -258,7 +258,7 @@
       const role = document.getElementById('memberRole').value;
       const pw = document.getElementById('memberPassword').value;
       const cpw = document.getElementById('memberPasswordConfirm').value;
-      if (!name || !email) { alert('Name and email are required.'); return; }
+      if (!name) { alert('Name is required.'); return; }
       if (pw && pw !== cpw) { alert('Passwords do not match.'); return; }
       if (id) {
         const idx = APP.team.findIndex(u => u.id === id);
@@ -270,8 +270,7 @@
           if (pw) APP.team[idx].password = pw;
         }
       } else {
-        if (!pw) { alert('Password is required for new members.'); return; }
-        APP.team.push({ id: 'u' + Date.now(), name, email, role, password: pw, avatar: name[0].toUpperCase(), color: 'bg-gray-700' });
+        APP.team.push({ id: 'u' + Date.now(), name, email, role, password: pw || '', avatar: name[0].toUpperCase(), color: 'bg-gray-700' });
       }
       saveData(); renderAdmin(); closeMemberModal();
     }
