@@ -65,12 +65,23 @@
             <input id="clientName" type="text" class="form-input" placeholder="Full name"/>
           </div>
           <div>
-            <label class="form-label">Team Lead *</label>
+            <label class="form-label">Team Lead</label>
             <select id="clientPM" class="form-input">
-              <option value="">Select PM</option>
-              <option value="Noman">Noman</option>
-              <option value="Zaid">Zaid</option>
-              <option value="Admin">Admin</option>
+              <option value="">Select Team Lead</option>
+            </select>
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="form-label">Assigned Executive</label>
+            <select id="clientExecutive" class="form-input">
+              <option value="">Select Executive</option>
+            </select>
+          </div>
+          <div>
+            <label class="form-label">Assigned Designer</label>
+            <select id="clientDesigner" class="form-input">
+              <option value="">Select Designer</option>
             </select>
           </div>
         </div>
@@ -275,11 +286,24 @@
       renderMemberTabs();
     }
 
+    function populateRoleDropdown(selectId, roles, selectedValue) {
+      const sel = document.getElementById(selectId);
+      const firstOpt = sel.options[0];
+      sel.innerHTML = '';
+      sel.appendChild(firstOpt);
+      APP.team.filter(m => roles.includes(m.role)).forEach(m => {
+        const o = document.createElement('option');
+        o.value = m.name;
+        o.textContent = m.name;
+        if (m.name === selectedValue) o.selected = true;
+        sel.appendChild(o);
+      });
+    }
+
     function openClientModal(client = null) {
       document.getElementById('clientId').value = client ? client.id : '';
       document.getElementById('clientModalTitle').textContent = client ? 'Edit Client' : 'Add New Client';
       document.getElementById('clientName').value = client?.name || '';
-      document.getElementById('clientPM').value = client?.pm || '';
       document.getElementById('clientStart').value = client?.startDate || '';
       document.getElementById('clientEnd').value = client?.endDate || '';
       document.getElementById('clientBudget').value = client?.budget || '';
@@ -289,6 +313,9 @@
       document.querySelectorAll('.content-type-check').forEach(cb => {
         cb.checked = client?.contentTypes?.includes(cb.value) || false;
       });
+      populateRoleDropdown('clientPM',        ['admin','project_manager'], client?.pm || '');
+      populateRoleDropdown('clientExecutive',  ['creator'],                 client?.executive || '');
+      populateRoleDropdown('clientDesigner',   ['designer'],                client?.designer || '');
       document.getElementById('clientModal').classList.add('open');
     }
 
@@ -301,6 +328,8 @@
         id: id || 'c' + Date.now(),
         name: document.getElementById('clientName').value.trim(),
         pm: document.getElementById('clientPM').value,
+        executive: document.getElementById('clientExecutive').value,
+        designer: document.getElementById('clientDesigner').value,
         startDate: document.getElementById('clientStart').value,
         endDate: document.getElementById('clientEnd').value,
         budget: parseInt(document.getElementById('clientBudget').value) || 0,
@@ -342,7 +371,9 @@
         <div class="grid grid-cols-2 gap-4 mb-5">
           <div class="bg-gray-800 rounded-xl p-4 space-y-2">
             <p class="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-3">Contract Info</p>
-            <div class="flex justify-between"><span class="text-xs text-gray-500">PM</span><span class="text-sm text-indigo-400 font-medium">${c.pm}</span></div>
+            <div class="flex justify-between"><span class="text-xs text-gray-500">Team Lead</span><span class="text-sm text-green-400 font-medium">${c.pm || '—'}</span></div>
+            ${c.executive ? `<div class="flex justify-between"><span class="text-xs text-gray-500">Executive</span><span class="text-sm text-blue-400 font-medium">${c.executive}</span></div>` : ''}
+            ${c.designer ? `<div class="flex justify-between"><span class="text-xs text-gray-500">Designer</span><span class="text-sm text-pink-400 font-medium">${c.designer}</span></div>` : ''}
             <div class="flex justify-between"><span class="text-xs text-gray-500">Tenure</span><span class="text-sm text-white">${c.tenure} months</span></div>
             <div class="flex justify-between"><span class="text-xs text-gray-500">Start</span><span class="text-sm text-white">${formatDate(c.startDate)}</span></div>
             <div class="flex justify-between"><span class="text-xs text-gray-500">End</span><span class="text-sm text-white">${formatDate(c.endDate)}</span></div>
