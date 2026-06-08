@@ -45,9 +45,9 @@ function getSampleTasks() {
 function getSampleTeam() {
   const data = [
     { id:'u1', name:'Admin',   role:'admin',           email:'admin@smm.com',   password:'admin123',   avatar:'A', color:'bg-indigo-700' },
-    { id:'u2', name:'Noman',   role:'creator',         email:'noman@smm.com',   password:'creator123', avatar:'N', color:'bg-blue-700'   },
-    { id:'u3', name:'Javeria', role:'designer',        email:'javeria@smm.com', password:'designer123',avatar:'J', color:'bg-pink-700'   },
-    { id:'u4', name:'Zaid',    role:'project_manager', email:'zaid@smm.com',    password:'pm123',      avatar:'Z', color:'bg-green-700'  },
+    { id:'u2', name:'Noman',   role:'project_manager', email:'noman@smm.com',   password:'lead123',    avatar:'N', color:'bg-green-700'  },
+    { id:'u3', name:'Javeria', role:'designer',        email:'javeria@smm.com', password:'exec123',    avatar:'J', color:'bg-pink-700'   },
+    { id:'u4', name:'Zaid',    role:'creator',         email:'zaid@smm.com',    password:'exec123',    avatar:'Z', color:'bg-blue-700'   },
   ];
   localStorage.setItem('smm_team', JSON.stringify(data));
   return data;
@@ -57,8 +57,8 @@ function getSampleTeam() {
 
 const ROLE_LABELS = {
   admin:           'Admin',
-  project_manager: 'Project Manager',
-  creator:         'Creator',
+  project_manager: 'Team Lead',
+  creator:         'Executive',
   designer:        'Designer',
 };
 
