@@ -89,11 +89,47 @@
       document.getElementById('loginPassword').value = pass;
     }
 
-    function handleLogin() {
+    async function handleLogin() {
       const email = document.getElementById('loginEmail').value.trim();
-      const pass = document.getElementById('loginPassword').value.trim();
+      const pass  = document.getElementById('loginPassword').value.trim();
+      const btn   = document.querySelector('button[onclick="handleLogin()"]');
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i>Signing in…';
+
+      const apiUrl = localStorage.getItem('smm_api_url') || '';
+
+      // API login
+      if (apiUrl) {
+        try {
+          const res = await fetch(apiUrl + '/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password: pass })
+          });
+          const data = await res.json();
+          if (res.ok && data.token) {
+            localStorage.setItem('smm_token', data.token);
+            localStorage.setItem('smm_user',  JSON.stringify(data.user));
+            window.location.href = 'index.html';
+            return;
+          }
+          document.getElementById('errorMsg').classList.remove('hidden');
+        } catch {
+          document.getElementById('errorMsg').classList.remove('hidden');
+          document.getElementById('errorMsg').innerHTML =
+            '<i class="fa-solid fa-circle-exclamation mr-2"></i>Cannot reach server — check API URL in Settings';
+        } finally {
+          btn.disabled = false;
+          btn.innerHTML = '<i class="fa-solid fa-right-to-bracket mr-2"></i>Sign In';
+        }
+        return;
+      }
+
+      // Fallback: localStorage login
       const team = JSON.parse(localStorage.getItem('smm_team')) || getSampleTeam();
       const user = team.find(u => u.email === email && u.password === pass);
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fa-solid fa-right-to-bracket mr-2"></i>Sign In';
       if (user) {
         localStorage.setItem('smm_user', JSON.stringify(user));
         window.location.href = 'index.html';

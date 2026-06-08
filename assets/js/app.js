@@ -1,18 +1,137 @@
+// ===== API CONFIG =====
+// Set this to your Railway backend URL (no trailing slash)
+const API_URL = localStorage.getItem('smm_api_url') || '';
+
+async function apiFetch(path, options = {}) {
+  const token = localStorage.getItem('smm_token');
+  const res = await fetch(API_URL + path, {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(options.headers || {})
+    },
+    body: options.body ? JSON.stringify(options.body) : undefined
+  });
+  if (res.status === 401) { logout(); return null; }
+  if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.error || res.statusText); }
+  return res.json();
+}
+
 // ===== GLOBAL APP STATE =====
+// Reads from localStorage (cache). API calls populate the cache on page load.
 const APP = {
   get currentUser() { return JSON.parse(localStorage.getItem('smm_user')) || null; },
-  get clients()     { return JSON.parse(localStorage.getItem('smm_clients')) || getSampleClients(); },
+  get clients()     { return JSON.parse(localStorage.getItem('smm_clients')) || []; },
   set clients(v)    { localStorage.setItem('smm_clients', JSON.stringify(v)); },
-  get tasks()       { return JSON.parse(localStorage.getItem('smm_tasks')) || getSampleTasks(); },
+  get tasks()       { return JSON.parse(localStorage.getItem('smm_tasks')) || []; },
   set tasks(v)      { localStorage.setItem('smm_tasks', JSON.stringify(v)); },
-  get team()        { return JSON.parse(localStorage.getItem('smm_team')) || getSampleTeam(); },
+  get team()        { return JSON.parse(localStorage.getItem('smm_team')) || []; },
   set team(v)       { localStorage.setItem('smm_team', JSON.stringify(v)); },
+  get useAPI()      { return !!API_URL; }
 };
 
+// Sync all data from API into localStorage cache
+async function syncFromAPI() {
+  if (!APP.useAPI) return;
+  try {
+    const [clients, tasks, team] = await Promise.all([
+      apiFetch('/clients'),
+      apiFetch('/tasks'),
+      apiFetch('/team')
+    ]);
+    if (clients) APP.clients = clients.map(normalizeClient);
+    if (tasks)   APP.tasks   = tasks.map(normalizeTask);
+    if (team)    APP.team    = team.map(normalizeMember);
+  } catch (err) {
+    console.warn('API sync failed, using cache:', err.message);
+  }
+}
+
+// Field name normalization: API uses snake_case, frontend uses camelCase
+function normalizeClient(c) {
+  return {
+    id: c.id, name: c.name, platform: c.platform, status: c.status,
+    package: c.package, budget: c.budget,
+    startDate: c.start_date || c.startDate,
+    endDate:   c.end_date   || c.endDate,
+    tenure: c.tenure, brief: c.brief,
+    executive: c.executive, designer: c.designer, pm: c.pm,
+    ...c
+  };
+}
+function normalizeTask(t) {
+  return {
+    id: t.id, clientId: t.client_id || t.clientId, clientName: t.client_name || t.clientName,
+    title: t.title, platform: t.platform, contentType: t.content_type || t.contentType,
+    status: t.status, priority: t.priority, assignedTo: t.assigned_to || t.assignedTo,
+    designer: t.designer, createdBy: t.created_by || t.createdBy,
+    dueDate: t.due_date || t.dueDate, postedDate: t.posted_date || t.postedDate,
+    brief: t.brief, changes_requested: t.changes_requested, change_note: t.change_note,
+    timeline: t.timeline || [], comments: t.change_requests || t.comments || [],
+    createdDate: t.created_at || t.createdDate,
+    ...t
+  };
+}
+function normalizeMember(m) {
+  return {
+    id: String(m.id), name: m.name, email: m.email, role: m.role,
+    avatar: m.avatar, color: ROLE_AVATAR_BG?.[m.role] || 'bg-gray-700', ...m
+  };
+}
+
+// saveData — writes to localStorage and fires background API sync
 function saveData() {
   localStorage.setItem('smm_clients', JSON.stringify(APP.clients));
   localStorage.setItem('smm_tasks',   JSON.stringify(APP.tasks));
   localStorage.setItem('smm_team',    JSON.stringify(APP.team));
+}
+
+// API write helpers — called alongside localStorage saves
+async function apiSaveClient(client) {
+  if (!APP.useAPI) return;
+  try { await apiFetch('/clients', { method: 'POST', body: {
+    id: client.id, name: client.name, platform: client.platform,
+    status: client.status, package: client.package, budget: client.budget,
+    start_date: client.startDate, end_date: client.endDate, tenure: client.tenure,
+    brief: client.brief, executive: client.executive, designer: client.designer, pm: client.pm
+  }}); } catch(e) { console.warn('apiSaveClient:', e.message); }
+}
+async function apiDeleteClient(id) {
+  if (!APP.useAPI) return;
+  try { await apiFetch(`/clients/${id}`, { method: 'DELETE' }); } catch(e) { console.warn(e.message); }
+}
+async function apiSaveTask(task) {
+  if (!APP.useAPI) return;
+  try { await apiFetch('/tasks', { method: 'POST', body: {
+    id: task.id, client_id: task.clientId, client_name: task.clientName,
+    title: task.title, platform: task.platform, content_type: task.contentType,
+    status: task.status, priority: task.priority, assigned_to: task.assignedTo,
+    designer: task.designer, created_by: task.createdBy,
+    due_date: task.dueDate, brief: task.brief
+  }}); } catch(e) { console.warn('apiSaveTask:', e.message); }
+}
+async function apiUpdateTask(id, fields) {
+  if (!APP.useAPI) return;
+  try { await apiFetch(`/tasks/${id}`, { method: 'PUT', body: fields }); } catch(e) { console.warn(e.message); }
+}
+async function apiDeleteTask(id) {
+  if (!APP.useAPI) return;
+  try { await apiFetch(`/tasks/${id}`, { method: 'DELETE' }); } catch(e) { console.warn(e.message); }
+}
+async function apiSaveMember(member) {
+  if (!APP.useAPI) return;
+  try {
+    if (member.id && !member.id.startsWith('u')) {
+      await apiFetch(`/team/${member.id}`, { method: 'PUT', body: member });
+    } else {
+      await apiFetch('/team', { method: 'POST', body: member });
+    }
+  } catch(e) { console.warn('apiSaveMember:', e.message); }
+}
+async function apiDeleteMember(id) {
+  if (!APP.useAPI) return;
+  try { await apiFetch(`/team/${id}`, { method: 'DELETE' }); } catch(e) { console.warn(e.message); }
 }
 
 // ===== SAMPLE DATA =====
@@ -264,6 +383,7 @@ function renderSidebar(user) {
 
 function logout() {
   localStorage.removeItem('smm_user');
+  localStorage.removeItem('smm_token');
   window.location.href = 'login.html';
 }
 
@@ -430,6 +550,16 @@ function pageInit(options = {}) {
     const colors = { admin:'bg-indigo-500/10 text-indigo-400 border-indigo-500/20', project_manager:'bg-green-500/10 text-green-400 border-green-500/20', creator:'bg-blue-500/10 text-blue-400 border-blue-500/20', designer:'bg-pink-500/10 text-pink-400 border-pink-500/20' };
     banner.className = `text-xs px-3 py-1.5 rounded-full border ${colors[user.role]||'bg-gray-500/10 text-gray-400 border-gray-500/20'}`;
     banner.textContent = ROLE_LABELS[user.role] || user.role;
+  }
+  // Sync from API in background if configured — caller gets user immediately,
+  // pages listen for 'smm:synced' event to re-render with fresh data
+  if (APP.useAPI) {
+    syncFromAPI().then(() => {
+      document.dispatchEvent(new CustomEvent('smm:synced'));
+    });
+  } else if (!localStorage.getItem('smm_clients')) {
+    // first ever load — seed sample data
+    getSampleClients(); getSampleTasks(); getSampleTeam();
   }
   return user;
 }
