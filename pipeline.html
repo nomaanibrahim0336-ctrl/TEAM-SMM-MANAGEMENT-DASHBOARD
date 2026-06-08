@@ -10,31 +10,7 @@
 </head>
 <body class="bg-gray-950 text-gray-100 font-sans">
 
-  <!-- SIDEBAR -->
-  <div class="fixed top-0 left-0 h-full w-64 bg-gray-900 border-r border-gray-800 flex flex-col z-50">
-    <div class="flex items-center gap-3 px-6 py-5 border-b border-gray-800">
-      <div class="w-9 h-9 rounded-lg bg-indigo-600 flex items-center justify-center"><i class="fa-solid fa-layer-group text-white text-sm"></i></div>
-      <span class="text-white font-bold text-lg tracking-wide">SMM-MANAGER</span>
-    </div>
-    <nav class="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
-      <a href="index.html" class="nav-link"><i class="fa-solid fa-gauge-high w-5"></i><span>Dashboard</span></a>
-      <a href="clients.html" class="nav-link"><i class="fa-solid fa-users w-5"></i><span>Clients</span></a>
-      <a href="pipeline.html" class="nav-link active"><i class="fa-solid fa-kanban w-5"></i><span>Pipeline</span></a>
-      <a href="tasks.html" class="nav-link"><i class="fa-solid fa-list-check w-5"></i><span>Tasks</span></a>
-      <a href="team.html" class="nav-link"><i class="fa-solid fa-people-group w-5"></i><span>Team</span></a>
-      <a href="analytics.html" class="nav-link"><i class="fa-solid fa-chart-line w-5"></i><span>Analytics</span></a>
-      <div class="pt-4 pb-1 px-3"><p class="text-xs text-gray-600 uppercase tracking-widest font-semibold">Admin</p></div>
-      <a href="admin.html" class="nav-link"><i class="fa-solid fa-shield-halved w-5"></i><span>Admin Panel</span></a>
-      <a href="settings.html" class="nav-link"><i class="fa-solid fa-gear w-5"></i><span>Settings</span></a>
-    </nav>
-    <div class="px-4 py-4 border-t border-gray-800">
-      <div class="flex items-center gap-3">
-        <div class="w-9 h-9 rounded-full bg-indigo-700 flex items-center justify-center text-sm font-bold">A</div>
-        <div class="flex-1 min-w-0"><p class="text-sm font-semibold text-white truncate">Admin</p><p class="text-xs text-gray-500 truncate">admin@smm.com</p></div>
-        <a href="login.html" class="text-gray-500 hover:text-red-400 transition-colors"><i class="fa-solid fa-right-from-bracket text-sm"></i></a>
-      </div>
-    </div>
-  </div>
+  <div id="sidebar" class="fixed top-0 left-0 h-full w-64 bg-gray-900 border-r border-gray-800 flex flex-col z-50"></div>
 
   <!-- MAIN -->
   <div class="ml-64 min-h-screen flex flex-col">
@@ -47,9 +23,7 @@
         <select id="pipelineFilter" class="form-input w-auto text-sm py-2" onchange="renderBoard()">
           <option value="">All Clients</option>
         </select>
-        <button onclick="openTaskModal()" class="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors">
-          <i class="fa-solid fa-plus text-xs"></i> New Task
-        </button>
+        <div id="newTaskBtnWrap"></div>
       </div>
     </header>
 
@@ -159,7 +133,8 @@
 
     function renderBoard() {
       const filterClient = document.getElementById('pipelineFilter').value;
-      const tasks = APP.tasks.filter(t => !filterClient || t.clientId === filterClient);
+      const base = window._visibleTasks || APP.tasks;
+      const tasks = base.filter(t => !filterClient || t.clientId === filterClient);
       const board = document.getElementById('kanbanBoard');
       board.innerHTML = COLUMNS.map(col => {
         const colTasks = tasks.filter(t => t.status === col.id);
@@ -379,7 +354,20 @@
       });
     }
 
-    document.addEventListener('DOMContentLoaded', () => { populateClientFilter(); renderBoard(); });
+    document.addEventListener('DOMContentLoaded', () => {
+      const user = pageInit();
+      if (!user) return;
+      // Only PM/Admin see New Task button
+      if (can('create_task', user)) {
+        document.getElementById('newTaskBtnWrap').innerHTML = `
+          <button onclick="openTaskModal()" class="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors">
+            <i class="fa-solid fa-plus text-xs"></i> New Task
+          </button>`;
+      }
+      window._visibleTasks = getVisibleTasks(APP.tasks, user);
+      populateClientFilter();
+      renderBoard();
+    });
   </script>
 </body>
 </html>
