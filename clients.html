@@ -202,7 +202,7 @@
       return `
         <table class="data-table w-full">
           <thead><tr>
-            <th>Client</th><th>Manager</th><th>Tenure</th>
+            <th>Client</th><th>Team Lead</th><th>Tenure</th>
             <th>Start</th><th>End</th><th>Days Left</th>
             <th>Budget</th><th>Status</th>
             ${canEdit ? '<th></th>' : ''}
@@ -217,7 +217,7 @@
                                 `<span class="text-gray-400">${days}d</span>`;
               return `<tr class="cursor-pointer" onclick="viewClient('${c.id}')">
                 <td><span class="font-medium text-white">${c.name}</span></td>
-                <td><span class="text-indigo-400">${c.pm}</span></td>
+                <td><span class="text-green-400">${c.pm||'—'}</span></td>
                 <td>${c.tenure} mo</td>
                 <td>${formatDate(c.startDate)}</td>
                 <td>${formatDate(c.endDate)}</td>
@@ -404,8 +404,15 @@
     }
 
     function deleteClient(id) {
-      if (!confirm('Delete this client? This cannot be undone.')) return;
+      const c = APP.clients.find(c => c.id === id);
+      if (!c) return;
+      const taskCount = APP.tasks.filter(t => t.clientId === id).length;
+      const msg = taskCount
+        ? `Delete "${c.name}"? This will also remove ${taskCount} associated task(s). This cannot be undone.`
+        : `Delete "${c.name}"? This cannot be undone.`;
+      if (!confirm(msg)) return;
       APP.clients = APP.clients.filter(c => c.id !== id);
+      APP.tasks   = APP.tasks.filter(t => t.clientId !== id);
       saveData(); renderClients(); renderStats();
     }
 

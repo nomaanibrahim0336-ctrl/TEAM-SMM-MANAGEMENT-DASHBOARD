@@ -162,7 +162,7 @@
   <script>
     const ROLE_CONFIG = {
       admin:           { label:'Admin',           color:'bg-indigo-500/15 text-indigo-400 border-indigo-500/30',  avatarBg:'bg-indigo-700',  icon:'fa-shield-halved' },
-      creator:         { label:'Creator',         color:'bg-blue-500/15 text-blue-400 border-blue-500/30',        avatarBg:'bg-blue-700',    icon:'fa-pen-nib' },
+      creator:         { label:'Executive',        color:'bg-blue-500/15 text-blue-400 border-blue-500/30',        avatarBg:'bg-blue-700',    icon:'fa-pen-nib' },
       designer:        { label:'Designer',        color:'bg-pink-500/15 text-pink-400 border-pink-500/30',        avatarBg:'bg-pink-700',    icon:'fa-palette' },
       project_manager: { label:'Team Lead', color:'bg-green-500/15 text-green-400 border-green-500/30',     avatarBg:'bg-green-700',   icon:'fa-user-tie' },
     };
@@ -276,8 +276,30 @@
     }
 
     function deleteMember(id) {
-      if (!confirm('Remove this team member?')) return;
-      APP.team = APP.team.filter(u => u.id !== id);
+      const u = APP.team.find(u => u.id === id);
+      if (!u) return;
+      const taskCount = APP.tasks.filter(t => t.assignedTo === u.name || t.designer === u.name || t.createdBy === u.name).length;
+      const msg = taskCount
+        ? `Remove "${u.name}"? They are referenced in ${taskCount} task(s) — those tasks will become unassigned. This cannot be undone.`
+        : `Remove "${u.name}" from the team? This cannot be undone.`;
+      if (!confirm(msg)) return;
+      // Clear references in tasks instead of deleting them
+      APP.tasks = APP.tasks.map(t => {
+        const updated = { ...t };
+        if (t.assignedTo === u.name) updated.assignedTo = '';
+        if (t.designer   === u.name) updated.designer   = '';
+        if (t.createdBy  === u.name) updated.createdBy  = 'Former member';
+        return updated;
+      });
+      // Clear references in clients
+      APP.clients = APP.clients.map(c => {
+        const updated = { ...c };
+        if (c.pm        === u.name) updated.pm        = '';
+        if (c.executive === u.name) updated.executive = '';
+        if (c.designer  === u.name) updated.designer  = '';
+        return updated;
+      });
+      APP.team = APP.team.filter(m => m.id !== id);
       saveData(); renderAdmin();
     }
 

@@ -380,7 +380,7 @@
       const info = document.getElementById('clientInfoText');
       if (c) {
         banner.classList.remove('hidden');
-        info.textContent = `PM: ${c.pm} · Budget: PKR ${c.budget.toLocaleString()} · Contract ends: ${formatDate(c.endDate)}`;
+        info.textContent = `Lead: ${c.pm||'—'} · Executive: ${c.executive||'—'} · Designer: ${c.designer||'—'} · Budget: PKR ${(c.budget||0).toLocaleString()} · Ends: ${formatDate(c.endDate)}`;
       } else { banner.classList.add('hidden'); }
     }
 
@@ -402,9 +402,9 @@
         dueDate: due,
         priority: document.getElementById('taskPriority').value,
         status: 'new',
-        createdBy: 'You',
-        assignedTo: 'Noman',
-        designer: 'Javeria',
+        createdBy: user ? user.name : 'You',
+        assignedTo: client.executive || client.pm || '',
+        designer: client.designer || '',
         createdDate: new Date().toISOString().split('T')[0],
         comments: [],
         timeline: [{ action: 'Task created', by: 'You', date: new Date().toISOString().split('T')[0] }],

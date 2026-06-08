@@ -113,10 +113,10 @@ function getVisibleTasks(allTasks, user) {
 // Clients visible to current user
 function getVisibleClients(allClients, user) {
   if (!user) return [];
-  if (user.role === 'admin') return allClients;
-  if (user.role === 'project_manager') return allClients;
-  if (user.role === 'creator') return allClients.filter(c => c.pm === user.name || allClients); // view all
-  return allClients; // designer sees all (read-only)
+  if (user.role === 'admin' || user.role === 'project_manager') return allClients;
+  if (user.role === 'creator') return allClients.filter(c => c.executive === user.name || c.pm === user.name);
+  if (user.role === 'designer') return allClients.filter(c => c.designer === user.name);
+  return [];
 }
 
 // What actions a role can perform
