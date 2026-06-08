@@ -36,28 +36,15 @@
 
     <main class="flex-1 px-8 py-6 space-y-6">
 
-      <!-- STATS ROW -->
+      <!-- OVERALL STATS -->
       <div class="grid grid-cols-4 gap-4" id="clientStats"></div>
 
-      <!-- TABLE -->
+      <!-- MEMBER TABS -->
       <div class="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
-        <table class="data-table">
-          <thead>
-            <tr>
-              <th>Client Name</th>
-              <th>Project Manager</th>
-              <th>Tenure</th>
-              <th>Start Date</th>
-              <th>End Date</th>
-              <th>Days Left</th>
-              <th>Monthly Budget</th>
-              <th>Status</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody id="clientsTableBody"></tbody>
-        </table>
+        <div class="flex items-center gap-0 border-b border-gray-800 px-4 overflow-x-auto" id="memberTabs"></div>
+        <div id="memberTabContent" class="p-0"></div>
       </div>
+
     </main>
   </div>
 
@@ -190,46 +177,102 @@
       `;
     }
 
-    function renderClients() {
+    let _activeTab = 'all';
+
+    function buildClientTable(list, canEdit) {
+      if (!list.length) return `<div class="text-center py-12 text-gray-600">No clients found</div>`;
+      return `
+        <table class="data-table w-full">
+          <thead><tr>
+            <th>Client</th><th>Manager</th><th>Tenure</th>
+            <th>Start</th><th>End</th><th>Days Left</th>
+            <th>Budget</th><th>Status</th>
+            ${canEdit ? '<th></th>' : ''}
+          </tr></thead>
+          <tbody>
+            ${list.map(c => {
+              const s = getClientStatus(c);
+              const days = daysUntil(c.endDate);
+              const daysLabel = days < 0 ? `<span class="text-red-400">${Math.abs(days)}d overdue</span>` :
+                                days <= 14 ? `<span class="text-red-400 font-semibold">${days}d</span>` :
+                                days <= 30 ? `<span class="text-orange-400">${days}d</span>` :
+                                `<span class="text-gray-400">${days}d</span>`;
+              return `<tr class="cursor-pointer" onclick="viewClient('${c.id}')">
+                <td><span class="font-medium text-white">${c.name}</span></td>
+                <td><span class="text-indigo-400">${c.pm}</span></td>
+                <td>${c.tenure} mo</td>
+                <td>${formatDate(c.startDate)}</td>
+                <td>${formatDate(c.endDate)}</td>
+                <td>${daysLabel}</td>
+                <td class="font-medium">PKR ${(c.budget||0).toLocaleString()}</td>
+                <td>${statusLabel(s)}</td>
+                ${canEdit ? `<td onclick="event.stopPropagation()"><div class="flex gap-2">
+                  <button onclick="editClient('${c.id}')" class="text-gray-500 hover:text-indigo-400 transition-colors p-1"><i class="fa-solid fa-pen text-xs"></i></button>
+                  <button onclick="deleteClient('${c.id}')" class="text-gray-500 hover:text-red-400 transition-colors p-1"><i class="fa-solid fa-trash text-xs"></i></button>
+                </div></td>` : ''}
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>`;
+    }
+
+    function renderMemberTabs() {
       const search = document.getElementById('clientSearch').value.toLowerCase();
       const statusF = document.getElementById('statusFilter').value;
-      let list = APP.clients.filter(c => {
+      const canEdit = _currentUser && (_currentUser.role === 'admin' || _currentUser.role === 'pm');
+
+      const allClients = APP.clients;
+      const pms = [...new Set(allClients.map(c => c.pm).filter(Boolean))].sort();
+
+      const tabs = [{ id: 'all', label: 'All Clients', icon: 'fa-users' }, ...pms.map(pm => ({ id: pm, label: pm, icon: 'fa-user' }))];
+
+      const tabsEl = document.getElementById('memberTabs');
+      tabsEl.innerHTML = tabs.map(t => `
+        <button onclick="switchTab('${t.id}')" id="tab_${t.id.replace(/\s/g,'_')}"
+          class="tab-btn flex items-center gap-2 px-5 py-3.5 text-sm font-medium border-b-2 whitespace-nowrap transition-colors
+            ${_activeTab === t.id ? 'border-indigo-500 text-indigo-400 bg-indigo-500/5' : 'border-transparent text-gray-500 hover:text-gray-300 hover:bg-gray-800/50'}">
+          <i class="fa-solid ${t.icon} text-xs"></i>
+          ${t.label}
+        </button>`).join('');
+
+      let filtered = allClients.filter(c => {
         const s = getClientStatus(c);
-        const matchSearch = c.name.toLowerCase().includes(search) || c.pm.toLowerCase().includes(search);
+        const matchSearch = !search || c.name.toLowerCase().includes(search) || (c.pm||'').toLowerCase().includes(search);
         const matchStatus = !statusF || s === statusF;
-        return matchSearch && matchStatus;
+        const matchTab = _activeTab === 'all' || c.pm === _activeTab;
+        return matchSearch && matchStatus && matchTab;
       });
 
-      const tbody = document.getElementById('clientsTableBody');
-      if (!list.length) {
-        tbody.innerHTML = `<tr><td colspan="9" class="text-center py-12 text-gray-600">No clients found</td></tr>`;
-        return;
+      const content = document.getElementById('memberTabContent');
+
+      if (_activeTab !== 'all') {
+        const pmClients = allClients.filter(c => c.pm === _activeTab);
+        const activeCnt = pmClients.filter(c => getClientStatus(c) === 'active').length;
+        const totalBudget = pmClients.reduce((s, c) => s + (c.budget||0), 0);
+        const initials = _activeTab.split(' ').map(w => w[0]).join('').toUpperCase().slice(0,2);
+        const colors = ['bg-indigo-600','bg-violet-600','bg-pink-600','bg-emerald-600','bg-orange-600','bg-cyan-600'];
+        const colorIdx = pms.indexOf(_activeTab) % colors.length;
+        content.innerHTML = `
+          <div class="flex items-center gap-4 p-5 border-b border-gray-800 bg-gray-800/30">
+            <div class="w-12 h-12 rounded-xl ${colors[colorIdx]} flex items-center justify-center text-white font-bold text-lg">${initials}</div>
+            <div>
+              <p class="text-base font-semibold text-white">${_activeTab}</p>
+              <p class="text-xs text-gray-500 mt-0.5">${pmClients.length} clients &bull; ${activeCnt} active &bull; PKR ${(totalBudget/1000).toFixed(0)}K/mo total budget</p>
+            </div>
+          </div>
+          <div class="p-0">${buildClientTable(filtered, canEdit)}</div>`;
+      } else {
+        content.innerHTML = `<div>${buildClientTable(filtered, canEdit)}</div>`;
       }
-      tbody.innerHTML = list.map(c => {
-        const s = getClientStatus(c);
-        const days = daysUntil(c.endDate);
-        const daysLabel = days < 0 ? `<span class="text-red-400">${Math.abs(days)}d overdue</span>` :
-                          days <= 14 ? `<span class="text-red-400 font-semibold">${days}d</span>` :
-                          days <= 30 ? `<span class="text-orange-400">${days}d</span>` :
-                          `<span class="text-gray-400">${days}d</span>`;
-        return `
-          <tr class="cursor-pointer" onclick="viewClient('${c.id}')">
-            <td><span class="font-medium text-white">${c.name}</span></td>
-            <td><span class="text-indigo-400">${c.pm}</span></td>
-            <td>${c.tenure} mo</td>
-            <td>${formatDate(c.startDate)}</td>
-            <td>${formatDate(c.endDate)}</td>
-            <td>${daysLabel}</td>
-            <td class="font-medium">PKR ${(c.budget||0).toLocaleString()}</td>
-            <td>${statusLabel(s)}</td>
-            <td onclick="event.stopPropagation()">
-              <div class="flex gap-2">
-                <button onclick="editClient('${c.id}')" class="text-gray-500 hover:text-indigo-400 transition-colors p-1"><i class="fa-solid fa-pen text-xs"></i></button>
-                <button onclick="deleteClient('${c.id}')" class="text-gray-500 hover:text-red-400 transition-colors p-1"><i class="fa-solid fa-trash text-xs"></i></button>
-              </div>
-            </td>
-          </tr>`;
-      }).join('');
+    }
+
+    function switchTab(tabId) {
+      _activeTab = tabId;
+      renderMemberTabs();
+    }
+
+    function renderClients() {
+      renderMemberTabs();
     }
 
     function openClientModal(client = null) {
