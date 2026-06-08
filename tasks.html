@@ -276,6 +276,11 @@
         return;
       }
 
+      if (status === 'changes_requested') {
+        showChangesModal(id, () => { saveData(); renderTasks(); closeDetail(); });
+        return;
+      }
+
       t.status = status;
       t.timeline = t.timeline || [];
       t.timeline.push({ action: `Moved to ${status.replace(/_/g,' ')}`, by: 'You', date: new Date().toISOString().split('T')[0] });
@@ -291,6 +296,51 @@
       t.comments = t.comments || [];
       t.comments.push({ by: 'You', text, date: new Date().toISOString().split('T')[0] });
       saveData(); input.value = ''; viewTask(taskId);
+    }
+
+    function showChangesModal(taskId, onDone) {
+      const existing = document.getElementById('changesModal');
+      if (existing) existing.remove();
+      const modal = document.createElement('div');
+      modal.id = 'changesModal';
+      modal.className = 'modal-overlay open';
+      modal.innerHTML = `
+        <div class="modal-box" style="max-width:460px">
+          <div class="flex items-center justify-between px-6 py-5 border-b border-gray-800">
+            <div>
+              <h2 class="text-base font-semibold text-white">Request Changes</h2>
+              <p class="text-xs text-gray-500 mt-0.5">Describe what needs to be changed</p>
+            </div>
+            <button onclick="document.getElementById('changesModal').remove()" class="text-gray-500 hover:text-gray-300"><i class="fa-solid fa-xmark text-lg"></i></button>
+          </div>
+          <div class="p-6 space-y-4">
+            <textarea id="changesNote" class="form-input" rows="4" placeholder="e.g. Change the audio, adjust colours, redo the caption..."></textarea>
+            <div class="flex gap-3 justify-end">
+              <button onclick="document.getElementById('changesModal').remove()" class="btn-secondary text-sm">Cancel</button>
+              <button onclick="confirmChanges('${taskId}')" class="btn-primary text-sm"><i class="fa-solid fa-flag mr-2 text-xs"></i>Request Changes</button>
+            </div>
+          </div>
+        </div>`;
+      document.body.appendChild(modal);
+      modal.querySelector('#changesNote').focus();
+      window._changesCallback = onDone;
+    }
+
+    function confirmChanges(taskId) {
+      const note = document.getElementById('changesNote').value.trim();
+      if (!note) { showToast('Please describe what needs to change.', 'error'); return; }
+      const t = APP.tasks.find(t => t.id === taskId);
+      if (!t) return;
+      const today = new Date().toISOString().split('T')[0];
+      const user = APP.currentUser;
+      t.status = 'changes_requested';
+      t.comments = t.comments || [];
+      t.comments.push({ by: user ? user.name : 'You', text: note, date: today, type: 'change_request' });
+      t.timeline = t.timeline || [];
+      t.timeline.push({ action: `Changes requested: "${note}"`, by: user ? user.name : 'You', date: today });
+      document.getElementById('changesModal').remove();
+      if (window._changesCallback) window._changesCallback();
+      showToast('Changes requested and logged.');
     }
 
     function deleteTask(id) {

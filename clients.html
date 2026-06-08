@@ -361,6 +361,37 @@
           <p class="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-3">Content Types</p>
           <div class="flex flex-wrap gap-2">${(c.contentTypes||[]).map(t => `<span class="status-badge bg-indigo-500/15 text-indigo-400 border-indigo-500/30">${t}</span>`).join('')}</div>
         </div>
+        ${(() => {
+          const changeTasks = tasks.filter(t => t.status === 'changes_requested');
+          if (!changeTasks.length) return '';
+          return `<div class="rounded-xl border border-red-500/30 bg-red-500/5 p-4 mb-4">
+            <div class="flex items-center gap-2 mb-3">
+              <i class="fa-solid fa-flag text-red-400 text-xs"></i>
+              <p class="text-xs text-red-400 uppercase tracking-wider font-semibold">Change Requests (${changeTasks.length})</p>
+            </div>
+            <div class="space-y-3">
+              ${changeTasks.map(t => {
+                const changeComments = (t.comments||[]).filter(cm => cm.type === 'change_request' || !cm.type);
+                return `<div class="bg-gray-900 rounded-lg p-3 border border-gray-700">
+                  <div class="flex items-center justify-between mb-2">
+                    <span class="text-sm font-medium text-white">${t.contentType} — ${t.topic}</span>
+                    <span class="text-xs text-gray-500">${t.platform||''}</span>
+                  </div>
+                  ${changeComments.length ? changeComments.map(cm => `
+                    <div class="flex gap-2 mt-1.5">
+                      <div class="w-5 h-5 rounded-full bg-red-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <i class="fa-solid fa-comment text-red-400" style="font-size:8px"></i>
+                      </div>
+                      <div>
+                        <p class="text-xs text-gray-300">${cm.text}</p>
+                        <p class="text-xs text-gray-600 mt-0.5">${cm.by} &bull; ${cm.date}</p>
+                      </div>
+                    </div>`).join('') : '<p class="text-xs text-gray-600 italic">No comment added</p>'}
+                </div>`;
+              }).join('')}
+            </div>
+          </div>`;
+        })()}
         ${tasks.length ? `
         <div class="bg-gray-800 rounded-xl p-4">
           <p class="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-3">Recent Tasks</p>
