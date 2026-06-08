@@ -212,6 +212,8 @@
               <div class="flex justify-between"><span class="text-xs text-gray-500">Creator</span><span class="text-sm text-white">${t.assignedTo}</span></div>
               <div class="flex justify-between"><span class="text-xs text-gray-500">Designer</span><span class="text-sm text-white">${t.designer}</span></div>
               <div class="flex justify-between"><span class="text-xs text-gray-500">Created by</span><span class="text-sm text-white">${t.createdBy}</span></div>
+              ${t.postedDate ? `<div class="flex justify-between"><span class="text-xs text-gray-500">Posted Date</span><span class="text-sm text-green-400 font-medium">${formatDate(t.postedDate)}${t.postedTime ? ' at ' + t.postedTime : ''}</span></div>` : ''}
+              ${t.postedNote ? `<div class="flex justify-between"><span class="text-xs text-gray-500">Post Note</span><span class="text-sm text-gray-300">${t.postedNote}</span></div>` : ''}
             </div>
           </div>
           ${t.brief ? `<div class="bg-gray-800 rounded-xl p-4"><p class="text-xs text-gray-500 mb-1">Brief</p><p class="text-sm text-gray-300">${t.brief}</p></div>` : ''}
@@ -258,6 +260,22 @@
     function moveTask(id, status) {
       const t = APP.tasks.find(t => t.id === id);
       if (!t) return;
+
+      if (status === 'posted') {
+        showPostedDateModal(id, (date, time, note) => {
+          t.status = 'posted';
+          t.postedDate = date;
+          t.postedTime = time;
+          t.postedNote = note;
+          t.timeline = t.timeline || [];
+          const label = time ? `Posted on ${date} at ${time}` : `Posted on ${date}`;
+          t.timeline.push({ action: label + (note ? ` — ${note}` : ''), by: 'You', date });
+          saveData(); renderTasks(); closeDetail();
+          showToast('Task marked as Posted!');
+        });
+        return;
+      }
+
       t.status = status;
       t.timeline = t.timeline || [];
       t.timeline.push({ action: `Moved to ${status.replace(/_/g,' ')}`, by: 'You', date: new Date().toISOString().split('T')[0] });
@@ -303,7 +321,7 @@
       const client = APP.clients.find(c => c.id === clientId);
       const topic = document.getElementById('ntTopic').value.trim();
       const due = document.getElementById('ntDue').value;
-      if (!clientId || !topic || !due) { alert('Please fill required fields.'); return; }
+      if (!clientId) { showToast('Please select a client.', 'error'); return; }
       APP.tasks.push({
         id: 't' + Date.now(), clientId, clientName: client.name,
         contentType: document.getElementById('ntType').value,

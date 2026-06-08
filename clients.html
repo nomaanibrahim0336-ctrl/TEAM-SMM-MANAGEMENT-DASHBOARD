@@ -267,9 +267,7 @@
         currency: 'PKR',
         contentTypes,
       };
-      if (!data.name || !data.pm || !data.startDate || !data.endDate) {
-        alert('Please fill all required fields.'); return;
-      }
+      if (!data.name) { showToast('Please enter a client name.', 'error'); return; }
       if (id) {
         const idx = APP.clients.findIndex(c => c.id === id);
         if (idx !== -1) APP.clients[idx] = data;

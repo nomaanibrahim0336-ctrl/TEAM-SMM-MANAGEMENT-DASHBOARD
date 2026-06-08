@@ -251,6 +251,70 @@ function statusBadge(status) {
   return `<span class="status-badge ${cfg.color}">${cfg.label}</span>`;
 }
 
+// ===== POSTED DATE MODAL =====
+// Call this instead of directly setting status to 'posted'
+// onConfirm(postedDate) is called with the date string
+function showPostedDateModal(taskId, onConfirm) {
+  // Remove existing if any
+  const existing = document.getElementById('_postedModal');
+  if (existing) existing.remove();
+
+  const today = new Date().toISOString().split('T')[0];
+
+  const overlay = document.createElement('div');
+  overlay.id = '_postedModal';
+  overlay.className = 'modal-overlay open';
+  overlay.style.zIndex = '300';
+  overlay.innerHTML = `
+    <div class="modal-box" style="max-width:400px">
+      <div class="flex items-center justify-between px-6 py-5 border-b border-gray-800">
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 rounded-lg bg-green-500/20 flex items-center justify-center">
+            <i class="fa-solid fa-circle-check text-green-400 text-sm"></i>
+          </div>
+          <h2 class="text-base font-semibold text-white">Mark as Posted</h2>
+        </div>
+        <button onclick="document.getElementById('_postedModal').remove()" class="text-gray-500 hover:text-gray-300">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+      <div class="p-6 space-y-4">
+        <p class="text-sm text-gray-400">When was this content posted? You can leave it blank if you don't know yet.</p>
+        <div>
+          <label class="form-label">Date Posted</label>
+          <input id="_postedDateInput" type="date" class="form-input" value="${today}" max="${today}"/>
+        </div>
+        <div>
+          <label class="form-label">Posted Time (optional)</label>
+          <input id="_postedTimeInput" type="time" class="form-input" placeholder="e.g. 09:30"/>
+        </div>
+        <div>
+          <label class="form-label">Post Link / Notes (optional)</label>
+          <input id="_postedNoteInput" type="text" class="form-input" placeholder="e.g. Instagram link or any note"/>
+        </div>
+      </div>
+      <div class="flex justify-end gap-3 px-6 py-4 border-t border-gray-800">
+        <button onclick="document.getElementById('_postedModal').remove()" class="btn-secondary">Cancel</button>
+        <button id="_postedConfirmBtn" class="btn-primary flex items-center gap-2">
+          <i class="fa-solid fa-circle-check text-sm"></i> Mark Posted
+        </button>
+      </div>
+    </div>`;
+
+  document.body.appendChild(overlay);
+
+  document.getElementById('_postedConfirmBtn').onclick = () => {
+    const date = document.getElementById('_postedDateInput').value || today;
+    const time = document.getElementById('_postedTimeInput').value || '';
+    const note = document.getElementById('_postedNoteInput').value.trim() || '';
+    overlay.remove();
+    onConfirm(date, time, note);
+  };
+
+  // Close on overlay click
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+}
+
 // ===== TOAST =====
 function showToast(msg, type = 'success') {
   const existing = document.getElementById('_toast');
