@@ -298,13 +298,26 @@
       const id = document.getElementById('pwUserId').value;
       const pw = document.getElementById('newPw').value;
       const cpw = document.getElementById('confirmPw').value;
-      if (!pw) { alert('Enter a new password.'); return; }
+      if (!pw) { showToast('Enter a new password.'); return; }
       if (pw !== cpw) { document.getElementById('pwError').classList.remove('hidden'); return; }
+      document.getElementById('pwError').classList.add('hidden');
       const idx = APP.team.findIndex(u => u.id === id);
-      if (idx !== -1) { APP.team[idx].password = pw; }
+      if (idx !== -1) APP.team[idx].password = pw;
       saveData();
-      closePwModal();
-      showToast('Password updated successfully');
+      // Show success state inside modal
+      const body = document.querySelector('#pwModal .p-6');
+      body.innerHTML = `
+        <div class="flex flex-col items-center py-6 gap-4">
+          <div class="w-14 h-14 rounded-full bg-green-500/15 border border-green-500/30 flex items-center justify-center">
+            <i class="fa-solid fa-circle-check text-green-400 text-2xl"></i>
+          </div>
+          <div class="text-center">
+            <p class="text-base font-semibold text-white">Password Updated</p>
+            <p class="text-sm text-gray-400 mt-1">Password for <span class="text-white font-medium">${document.getElementById('pwUserName').textContent}</span> has been changed successfully.</p>
+          </div>
+        </div>`;
+      document.querySelector('#pwModal .flex.justify-end').innerHTML = `
+        <button onclick="closePwModal()" class="btn-primary px-8">Done</button>`;
     }
 
     function toggleMemberPw() {

@@ -177,26 +177,87 @@ function renderSidebar(user) {
 
   const sidebar = document.getElementById('sidebar');
   if (!sidebar) return;
+  // Reset sidebar container — panel is rendered inside it
+  sidebar.style.cssText = 'position:static;width:auto;height:auto;background:none;border:none;';
+
+  // Build notifications from visible tasks
+  const allTasks = APP.tasks;
+  const visibleTasks = getVisibleTasks(allTasks, user);
+  const changeReqs = visibleTasks.filter(t => t.status === 'changes_requested');
+  const dueToday   = visibleTasks.filter(t => { const d = daysUntil(t.dueDate); return d === 0 && t.status !== 'posted'; });
+  const overdue    = visibleTasks.filter(t => { const d = daysUntil(t.dueDate); return d < 0 && t.status !== 'posted'; });
+  const notifCount = changeReqs.length + dueToday.length + overdue.length;
+
+  const notifItems = [
+    ...changeReqs.map(t => `<div class="flex gap-3 p-3 hover:bg-gray-800 rounded-lg cursor-pointer transition-colors" onclick="window.location='tasks.html'">
+      <div class="w-7 h-7 rounded-full bg-red-500/20 flex items-center justify-center flex-shrink-0 mt-0.5"><i class="fa-solid fa-flag text-red-400 text-xs"></i></div>
+      <div class="min-w-0"><p class="text-xs font-medium text-white truncate">${t.clientName}</p><p class="text-xs text-red-400 truncate">${(t.comments||[]).slice(-1)[0]?.text || 'Changes requested'}</p></div>
+    </div>`),
+    ...dueToday.map(t => `<div class="flex gap-3 p-3 hover:bg-gray-800 rounded-lg cursor-pointer transition-colors" onclick="window.location='tasks.html'">
+      <div class="w-7 h-7 rounded-full bg-orange-500/20 flex items-center justify-center flex-shrink-0 mt-0.5"><i class="fa-solid fa-clock text-orange-400 text-xs"></i></div>
+      <div class="min-w-0"><p class="text-xs font-medium text-white truncate">${t.clientName}</p><p class="text-xs text-orange-400">Due today — ${t.topic}</p></div>
+    </div>`),
+    ...overdue.map(t => `<div class="flex gap-3 p-3 hover:bg-gray-800 rounded-lg cursor-pointer transition-colors" onclick="window.location='tasks.html'">
+      <div class="w-7 h-7 rounded-full bg-red-500/20 flex items-center justify-center flex-shrink-0 mt-0.5"><i class="fa-solid fa-triangle-exclamation text-red-400 text-xs"></i></div>
+      <div class="min-w-0"><p class="text-xs font-medium text-white truncate">${t.clientName}</p><p class="text-xs text-red-400">Overdue — ${t.topic}</p></div>
+    </div>`),
+  ].join('');
+
   sidebar.innerHTML = `
-    <div class="flex items-center gap-3 px-6 py-5 border-b border-gray-800">
-      <div class="w-9 h-9 rounded-lg bg-indigo-600 flex items-center justify-center">
-        <i class="fa-solid fa-layer-group text-white text-sm"></i>
-      </div>
-      <span class="text-white font-bold text-lg tracking-wide">SMM-MANAGER</span>
-    </div>
-    <nav class="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
-      ${navHTML}${adminHTML}
-    </nav>
-    <div class="px-4 py-4 border-t border-gray-800">
-      <div class="flex items-center gap-3">
-        <div class="w-9 h-9 rounded-full ${avatarBg} flex items-center justify-center text-sm font-bold">${user.avatar || user.name[0]}</div>
-        <div class="flex-1 min-w-0">
-          <p class="text-sm font-semibold text-white truncate">${user.name}</p>
-          <p class="text-xs text-gray-500 truncate">${roleLabel}</p>
+    <!-- Mobile overlay -->
+    <div id="sidebarOverlay" class="sidebar-overlay" onclick="closeSidebar()"></div>
+
+    <!-- Hamburger (mobile only) -->
+    <button id="hamburgerBtn" class="hamburger-btn" onclick="toggleSidebar()">
+      <i class="fa-solid fa-bars text-gray-300 text-lg"></i>
+    </button>
+
+    <!-- Sidebar panel -->
+    <div id="sidebarPanel" class="sidebar-panel">
+      <div class="flex items-center gap-3 px-6 py-5 border-b border-gray-800">
+        <div class="w-9 h-9 rounded-lg bg-indigo-600 flex items-center justify-center flex-shrink-0">
+          <i class="fa-solid fa-layer-group text-white text-sm"></i>
         </div>
-        <button onclick="logout()" class="text-gray-500 hover:text-red-400 transition-colors" title="Logout">
-          <i class="fa-solid fa-right-from-bracket text-sm"></i>
+        <span class="text-white font-bold text-lg tracking-wide sidebar-text">SMM-MANAGER</span>
+        <button class="ml-auto text-gray-500 hover:text-gray-300 lg:hidden" onclick="closeSidebar()">
+          <i class="fa-solid fa-xmark"></i>
         </button>
+      </div>
+      <nav class="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+        ${navHTML}${adminHTML}
+      </nav>
+
+      <!-- Notification Bell -->
+      <div class="px-3 pb-2 relative">
+        <button onclick="toggleNotifPanel()" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-gray-800 transition-colors text-left">
+          <div class="relative">
+            <i class="fa-solid fa-bell text-gray-400 text-sm w-5"></i>
+            ${notifCount ? `<span class="absolute -top-1.5 -right-1.5 w-4 h-4 bg-red-500 rounded-full text-white text-[9px] font-bold flex items-center justify-center">${notifCount > 9 ? '9+' : notifCount}</span>` : ''}
+          </div>
+          <span class="text-sm text-gray-400 sidebar-text">Notifications</span>
+          ${notifCount ? `<span class="ml-auto text-xs bg-red-500/20 text-red-400 px-2 py-0.5 rounded-full sidebar-text">${notifCount}</span>` : ''}
+        </button>
+        <!-- Notification dropdown -->
+        <div id="notifPanel" class="hidden absolute bottom-full left-3 right-3 mb-2 bg-gray-900 border border-gray-700 rounded-xl shadow-2xl z-50 max-h-80 overflow-y-auto">
+          <div class="px-4 py-3 border-b border-gray-800 flex items-center justify-between">
+            <p class="text-xs font-semibold text-white uppercase tracking-wider">Notifications</p>
+            <button onclick="toggleNotifPanel()" class="text-gray-500 hover:text-gray-300"><i class="fa-solid fa-xmark text-xs"></i></button>
+          </div>
+          ${notifItems || '<p class="text-xs text-gray-600 text-center py-6">All clear — nothing pending</p>'}
+        </div>
+      </div>
+
+      <div class="px-4 py-4 border-t border-gray-800">
+        <div class="flex items-center gap-3">
+          <div class="w-9 h-9 rounded-full ${avatarBg} flex items-center justify-center text-sm font-bold flex-shrink-0">${user.avatar || user.name[0]}</div>
+          <div class="flex-1 min-w-0 sidebar-text">
+            <p class="text-sm font-semibold text-white truncate">${user.name}</p>
+            <p class="text-xs text-gray-500 truncate">${roleLabel}</p>
+          </div>
+          <button onclick="logout()" class="text-gray-500 hover:text-red-400 transition-colors" title="Logout">
+            <i class="fa-solid fa-right-from-bracket text-sm"></i>
+          </button>
+        </div>
       </div>
     </div>`;
 }
@@ -204,6 +265,26 @@ function renderSidebar(user) {
 function logout() {
   localStorage.removeItem('smm_user');
   window.location.href = 'login.html';
+}
+
+function toggleSidebar() {
+  const panel = document.getElementById('sidebarPanel');
+  const overlay = document.getElementById('sidebarOverlay');
+  if (!panel) return;
+  panel.classList.toggle('open');
+  overlay.classList.toggle('open');
+}
+
+function closeSidebar() {
+  const panel = document.getElementById('sidebarPanel');
+  const overlay = document.getElementById('sidebarOverlay');
+  if (panel) panel.classList.remove('open');
+  if (overlay) overlay.classList.remove('open');
+}
+
+function toggleNotifPanel() {
+  const p = document.getElementById('notifPanel');
+  if (p) p.classList.toggle('hidden');
 }
 
 // Role badge HTML

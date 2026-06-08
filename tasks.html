@@ -362,8 +362,13 @@
     function onNTClientSelect() {
       const c = APP.clients.find(c => c.id === document.getElementById('ntClient').value);
       const banner = document.getElementById('ntClientBanner');
-      if (c) { banner.classList.remove('hidden'); document.getElementById('ntClientInfo').textContent = `PM: ${c.pm} · Budget: PKR ${c.budget.toLocaleString()} · Ends: ${formatDate(c.endDate)}`; }
-      else banner.classList.add('hidden');
+      if (c) {
+        banner.classList.remove('hidden');
+        const parts = [`Lead: ${c.pm||'—'}`, `Executive: ${c.executive||'—'}`, `Designer: ${c.designer||'—'}`, `Budget: PKR ${(c.budget||0).toLocaleString()}`, `Ends: ${formatDate(c.endDate)}`];
+        document.getElementById('ntClientInfo').textContent = parts.join(' · ');
+      } else {
+        banner.classList.add('hidden');
+      }
     }
 
     function createTask() {
@@ -371,6 +376,7 @@
       const client = APP.clients.find(c => c.id === clientId);
       const topic = document.getElementById('ntTopic').value.trim();
       const due = document.getElementById('ntDue').value;
+      const user = APP.currentUser;
       if (!clientId) { showToast('Please select a client.', 'error'); return; }
       APP.tasks.push({
         id: 't' + Date.now(), clientId, clientName: client.name,
@@ -379,9 +385,12 @@
         topic, brief: document.getElementById('ntBrief').value.trim(),
         instructions: document.getElementById('ntInstructions').value.trim(),
         dueDate: due, priority: document.getElementById('ntPriority').value,
-        status: 'new', createdBy: 'You', assignedTo: 'Noman', designer: 'Javeria',
+        status: 'new',
+        createdBy: user ? user.name : 'You',
+        assignedTo: client.executive || client.pm || '',
+        designer: client.designer || '',
         createdDate: new Date().toISOString().split('T')[0], comments: [],
-        timeline: [{ action: 'Task created', by: 'You', date: new Date().toISOString().split('T')[0] }],
+        timeline: [{ action: 'Task created', by: user ? user.name : 'You', date: new Date().toISOString().split('T')[0] }],
       });
       saveData(); renderTasks(); closeNewTask();
     }
