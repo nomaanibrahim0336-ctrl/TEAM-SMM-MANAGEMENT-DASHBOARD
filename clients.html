@@ -166,6 +166,38 @@
             <option value="paused">Paused</option>
           </select>
         </div>
+
+        <!-- CLIENT PHASE & PIPELINE ENTRY -->
+        <div class="bg-indigo-500/10 border border-indigo-500/30 rounded-xl p-4 space-y-3">
+          <div class="flex items-center gap-2 mb-1">
+            <i class="fa-solid fa-diagram-project text-indigo-400 text-xs"></i>
+            <p class="text-xs font-semibold text-indigo-300 uppercase tracking-wider">Pipeline Setup</p>
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="form-label">Client Phase</label>
+              <select id="clientPhase" class="form-input">
+                <option value="new">🆕 New Client</option>
+                <option value="mid">⚙️ Mid-Operation</option>
+                <option value="ongoing">✅ Ongoing / Existing</option>
+              </select>
+              <p class="text-xs text-gray-600 mt-1">Where is this client right now?</p>
+            </div>
+            <div>
+              <label class="form-label">Pipeline Entry Point</label>
+              <select id="clientPipelineStage" class="form-input">
+                <option value="new">📥 New (Start Fresh)</option>
+                <option value="ready_to_designer">🎨 Ready to Designer</option>
+                <option value="with_designer">🖌️ With Designer</option>
+                <option value="pending_review">👁️ Pending Review</option>
+                <option value="changes_requested">🔄 Changes Requested</option>
+                <option value="ready_to_post">📤 Ready to Post</option>
+                <option value="posted">✅ Already Posted</option>
+              </select>
+              <p class="text-xs text-gray-600 mt-1">Which stage to enter pipeline?</p>
+            </div>
+          </div>
+        </div>
       </div>
       <div class="flex justify-end gap-3 px-6 py-4 border-t border-gray-800">
         <button onclick="closeClientModal()" class="btn-secondary">Cancel</button>
@@ -441,6 +473,11 @@
         document.getElementById('customTenureInput').value = tenure;
         document.getElementById('clientTenure').value = tenure;
       }
+      // Restore Pipeline Setup fields
+      const phaseEl = document.getElementById('clientPhase');
+      const stageEl = document.getElementById('clientPipelineStage');
+      if (phaseEl) phaseEl.value = client?.phase || 'new';
+      if (stageEl) stageEl.value = client?.pipelineStage || 'new';
       document.getElementById('clientModal').classList.add('open');
     }
 
@@ -461,6 +498,8 @@
         tenure: parseInt(document.getElementById('clientTenure').value),
         notes: document.getElementById('clientNotes').value.trim(),
         status: document.getElementById('clientStatus').value,
+        phase: document.getElementById('clientPhase').value,
+        pipelineStage: document.getElementById('clientPipelineStage').value,
         currency: 'PKR',
         contentTypes,
       };
