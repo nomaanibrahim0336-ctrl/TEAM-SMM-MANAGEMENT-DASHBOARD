@@ -504,12 +504,42 @@
         contentTypes,
       };
       if (!data.name) { showToast('Please enter a client name.', 'error'); return; }
+      const allClients = APP.clients;
       if (id) {
-        const idx = APP.clients.findIndex(c => c.id === id);
-        if (idx !== -1) APP.clients[idx] = data;
+        const idx = allClients.findIndex(c => c.id === id);
+        if (idx !== -1) allClients[idx] = data;
+        else allClients.push(data);
       } else {
-        APP.clients.push(data);
+        allClients.push(data);
       }
+      APP.clients = allClients;
+
+      // If this is a new client (or activated from intake), create a pipeline task
+      // placed at the selected Pipeline Entry Point stage.
+      if (!id && data.pipelineStage) {
+        const allTasks = APP.tasks;
+        const newTask = {
+          id: 't' + Date.now(),
+          clientId: data.id,
+          clientName: data.name,
+          title: `${data.name} - Initial Content`,
+          status: data.pipelineStage,
+          priority: 'medium',
+          assignedTo: data.executive || '',
+          designer: data.designer || '',
+          dueDate: '',
+          postedDate: data.pipelineStage === 'posted' ? new Date().toISOString().split('T')[0] : '',
+          scheduledTill: '',
+          changesRequested: data.pipelineStage === 'changes_requested',
+          changeNote: '',
+          comments: [],
+          createdAt: new Date().toISOString(),
+        };
+        allTasks.push(newTask);
+        APP.tasks = allTasks;
+        apiSaveTask(newTask);
+      }
+
       saveData(); apiSaveClient(data); renderClients(); renderStats(); closeClientModal();
       // Remove from intake queue if this client was activated from there
       if (window._activatingIntakeId) {
