@@ -179,7 +179,7 @@
             </div>
             <i class="fa-solid fa-circle ${pColor} text-xs mt-1 flex-shrink-0" title="${t.priority} priority"></i>
           </div>
-          <p class="text-xs text-gray-400 mb-3 pl-9 truncate">${t.topic}</p>
+          <p class="text-xs text-gray-400 mb-3 pl-9 truncate">${t.title || t.topic || '—'}</p>
           <div class="flex items-center justify-between pl-0">
             <span class="text-xs text-gray-600 capitalize">${t.contentType}</span>
             ${dueLabel}
@@ -208,6 +208,7 @@
       const t = APP.tasks.find(t => t.id === id);
       if (!t) return;
       document.getElementById('taskDetailTitle').textContent = `${t.clientName} — ${t.contentType}`;
+      document.getElementById('taskDetailModal').classList.add('open');
       document.getElementById('taskDetailBody').innerHTML = `
         <div class="space-y-4">
           <div class="grid grid-cols-2 gap-3">
