@@ -31,10 +31,10 @@
           <option value="paused">Paused</option>
         </select>
         <button onclick="exportToSheets()" class="flex items-center gap-2 bg-green-600 hover:bg-green-500 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors whitespace-nowrap">
-          <i class="fa-brands fa-google text-xs"></i> Export to Sheets
+          <i class="fa-solid fa-cloud-arrow-up text-xs"></i> Export to Master
         </button>
         <button onclick="pullFromSheets(this)" class="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors whitespace-nowrap">
-          <i class="fa-solid fa-cloud-arrow-down text-xs"></i> Pull from Sheets
+          <i class="fa-solid fa-cloud-arrow-down text-xs"></i> Pull from Intake
         </button>
         <div id="addClientBtn"></div>
       </div>
@@ -762,7 +762,7 @@
 
       const script = document.createElement('script');
       script.id = '_sheetsScript';
-      script.src = SHEETS_URL + '?action=getClients&callback=' + cbName;
+      script.src = SHEETS_URL + '?action=getIntakeClients&callback=' + cbName;
       script.onerror = () => {
         cleanup();
         btn.disabled = false;
