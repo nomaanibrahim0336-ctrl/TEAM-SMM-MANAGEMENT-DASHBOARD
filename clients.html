@@ -710,21 +710,11 @@
           showToast('No client data found in "Clients" sheet tab', 'error'); return;
         }
 
-        // Map sheet columns back to client objects
+        // Only need Name — rest filled in dashboard
         const pulled = data.rows.map((r, i) => ({
-          id:        'sc_' + Date.now() + '_' + i,
-          name:      r.Name      || '',
-          platform:  r.Platform  || '',
-          status:    r.Status    || 'active',
-          package:   r.Package   || '',
-          budget:    Number(r.Budget) || 0,
-          startDate: r.StartDate || '',
-          endDate:   r.EndDate   || '',
-          tenure:    r.Tenure    || '',
-          executive: r.Executive || '',
-          designer:  r.Designer  || '',
-          pm:        r.Lead      || '',
-          brief:     r.Brief     || ''
+          id:     'sc_' + Date.now() + '_' + i,
+          name:   (r.Name || r.name || Object.values(r)[0] || '').trim(),
+          status: 'active'
         })).filter(c => c.name);
 
         if (!pulled.length) { showToast('No valid rows found in sheet', 'error'); return; }
