@@ -63,7 +63,15 @@
           </button></a>`;
       }
 
+      // Render immediately from cache, then sync fresh data from API
       renderDashboard(user);
+
+      if (APP.useAPI) {
+        syncFromAPI().then(() => renderDashboard(user));
+      }
+
+      // Re-render whenever API sync fires (e.g. after any write or 30s auto-refresh)
+      document.addEventListener('smm:synced', () => renderDashboard(user));
     });
 
     function openChangeTicket(taskId) {
