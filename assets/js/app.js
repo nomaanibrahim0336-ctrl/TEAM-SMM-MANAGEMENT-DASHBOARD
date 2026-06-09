@@ -67,6 +67,7 @@ function normalizeTask(t) {
     status: t.status, priority: t.priority, assignedTo: t.assigned_to || t.assignedTo,
     designer: t.designer, createdBy: t.created_by || t.createdBy,
     dueDate: t.due_date || t.dueDate, postedDate: t.posted_date || t.postedDate,
+    scheduledTill: t.scheduled_till || t.scheduledTill,
     brief: t.brief, changes_requested: t.changes_requested, change_note: t.change_note,
     timeline: t.timeline || [], comments: t.change_requests || t.comments || [],
     createdDate: t.created_at || t.createdDate,
@@ -496,13 +497,13 @@ function showPostedDateModal(taskId, onConfirm) {
       <div class="p-6 space-y-4">
         <div>
           <label class="form-label">Posted Date</label>
-          <input id="_postedDateInput" type="date" class="form-input" value="${today}" max="${today}"/>
-          <p class="text-xs text-gray-500 mt-1">Set to today by default — change if it was posted on a different day</p>
+          <input id="_postedDateInput" type="date" class="form-input bg-gray-800/50 cursor-not-allowed" value="${today}" readonly/>
+          <p class="text-xs text-gray-500 mt-1">Auto-set to today — the day content is being marked as posted</p>
         </div>
         <div>
-          <label class="form-label">Last Posted Date (previous cycle, optional)</label>
-          <input id="_lastPostedInput" type="date" class="form-input" max="${today}"/>
-          <p class="text-xs text-gray-500 mt-1">For tracking recurring content history</p>
+          <label class="form-label">Scheduled Till <span class="text-gray-500 font-normal">(optional)</span></label>
+          <input id="_scheduledTillInput" type="date" class="form-input" min="${today}"/>
+          <p class="text-xs text-gray-500 mt-1">Future date — how long it stays scheduled/active on Facebook</p>
         </div>
         <div>
           <label class="form-label">Post Link / Notes (optional)</label>
@@ -520,11 +521,11 @@ function showPostedDateModal(taskId, onConfirm) {
   document.body.appendChild(overlay);
 
   document.getElementById('_postedConfirmBtn').onclick = () => {
-    const date     = document.getElementById('_postedDateInput').value || today;
-    const lastDate = document.getElementById('_lastPostedInput').value || '';
-    const note     = document.getElementById('_postedNoteInput').value.trim() || '';
+    const date          = today; // always auto today
+    const scheduledTill = document.getElementById('_scheduledTillInput').value || '';
+    const note          = document.getElementById('_postedNoteInput').value.trim() || '';
     overlay.remove();
-    onConfirm(date, lastDate, note);
+    onConfirm(date, scheduledTill, note);
   };
 
   // Close on overlay click

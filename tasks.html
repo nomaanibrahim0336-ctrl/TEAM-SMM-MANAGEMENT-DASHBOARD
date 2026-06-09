@@ -234,7 +234,7 @@
               <div class="flex justify-between"><span class="text-xs text-gray-500">Designer</span><span class="text-sm text-pink-400">${t.designer||'—'}</span></div>
               <div class="flex justify-between"><span class="text-xs text-gray-500">Created by</span><span class="text-sm text-white">${t.createdBy}</span></div>
               ${t.postedDate ? `<div class="flex justify-between"><span class="text-xs text-gray-500">Posted</span><span class="text-sm text-green-400 font-medium">${formatDate(t.postedDate)}</span></div>` : ''}
-              ${t.lastPostedDate ? `<div class="flex justify-between"><span class="text-xs text-gray-500">Last Posted</span><span class="text-sm text-gray-400">${formatDate(t.lastPostedDate)}</span></div>` : ''}
+              ${t.scheduledTill ? `<div class="flex justify-between"><span class="text-xs text-gray-500">Scheduled Till</span><span class="text-sm text-yellow-400">${formatDate(t.scheduledTill)}</span></div>` : ''}
               ${t.postedNote ? `<div class="flex justify-between"><span class="text-xs text-gray-500">Post Note</span><span class="text-sm text-gray-300">${t.postedNote}</span></div>` : ''}
             </div>
           </div>
@@ -317,15 +317,15 @@
       if (!t) return;
 
       if (status === 'posted') {
-        showPostedDateModal(id, (date, lastDate, note) => {
+        showPostedDateModal(id, (date, scheduledTill, note) => {
           t.status = 'posted';
           t.postedDate = date;
-          t.lastPostedDate = lastDate;
+          t.scheduledTill = scheduledTill;
           t.postedNote = note;
           t.timeline = t.timeline || [];
-          const label = `Posted on ${formatDate(date)}` + (lastDate ? ` (Last posted: ${formatDate(lastDate)})` : '');
+          const label = `Posted on ${formatDate(date)}` + (scheduledTill ? ` — Scheduled till: ${formatDate(scheduledTill)}` : '');
           t.timeline.push({ action: label + (note ? ` — ${note}` : ''), by: 'You', date });
-          saveData(); apiUpdateTask(t.id, { status:'posted', posted_date: date, timeline_action: label + (note ? ` — ${note}` : '') }); renderTasks(); closeDetail();
+          saveData(); apiUpdateTask(t.id, { status:'posted', posted_date: date, scheduled_till: scheduledTill, timeline_action: label + (note ? ` — ${note}` : '') }); renderTasks(); closeDetail();
           showToast('Task marked as Posted!');
         });
         return;

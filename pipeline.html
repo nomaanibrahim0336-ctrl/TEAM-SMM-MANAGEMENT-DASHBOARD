@@ -287,15 +287,15 @@
       if (!task) return;
 
       if (newStatus === 'posted') {
-        showPostedDateModal(taskId, (date, lastDate, note) => {
+        showPostedDateModal(taskId, (date, scheduledTill, note) => {
           task.status = 'posted';
           task.postedDate = date;
-          task.lastPostedDate = lastDate;
+          task.scheduledTill = scheduledTill;
           task.postedNote = note;
           task.timeline = task.timeline || [];
-          const label = `Posted on ${formatDate(date)}` + (lastDate ? ` (Last posted: ${formatDate(lastDate)})` : '');
+          const label = `Posted on ${formatDate(date)}` + (scheduledTill ? ` — Scheduled till: ${formatDate(scheduledTill)}` : '');
           task.timeline.push({ action: label + (note ? ` — ${note}` : ''), by: 'You', date });
-          saveData(); apiUpdateTask(task.id, { status:'posted', posted_date: date, timeline_action: label + (note ? ` — ${note}` : '') });
+          saveData(); apiUpdateTask(task.id, { status:'posted', posted_date: date, scheduled_till: scheduledTill, timeline_action: label + (note ? ` — ${note}` : '') });
           renderBoard(); closeTaskDetail();
           showToast('Task marked as Posted!');
         });
