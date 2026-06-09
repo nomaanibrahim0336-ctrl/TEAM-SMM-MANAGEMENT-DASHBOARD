@@ -33,6 +33,9 @@
         <button onclick="exportToSheets()" class="flex items-center gap-2 bg-green-600 hover:bg-green-500 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors whitespace-nowrap">
           <i class="fa-brands fa-google text-xs"></i> Export to Sheets
         </button>
+        <button onclick="pullFromSheets(this)" class="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors whitespace-nowrap">
+          <i class="fa-solid fa-cloud-arrow-down text-xs"></i> Pull from Sheets
+        </button>
         <div id="addClientBtn"></div>
       </div>
     </header>
@@ -676,6 +679,97 @@
       }
       btn.disabled = false;
       btn.innerHTML = '<i class="fa-brands fa-google mr-2 text-xs"></i>Export to Sheets';
+    }
+
+    function pullFromSheets(btn) {
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2 text-xs"></i>Pulling…';
+
+      // JSONP: Apps Script wraps response in a callback fn so no CORS issue
+      const cbName = '_sheetsCB_' + Date.now();
+      const timeout = setTimeout(() => {
+        cleanup();
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-cloud-arrow-down mr-2 text-xs"></i>Pull from Sheets';
+        showToast('Pull timed out — check your Apps Script is deployed correctly', 'error');
+      }, 15000);
+
+      function cleanup() {
+        clearTimeout(timeout);
+        delete window[cbName];
+        const s = document.getElementById('_sheetsScript');
+        if (s) s.remove();
+      }
+
+      window[cbName] = function(data) {
+        cleanup();
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-cloud-arrow-down mr-2 text-xs"></i>Pull from Sheets';
+
+        if (!data || !data.rows || !data.rows.length) {
+          showToast('No client data found in "Clients" sheet tab', 'error'); return;
+        }
+
+        // Map sheet columns back to client objects
+        const pulled = data.rows.map((r, i) => ({
+          id:        'sc_' + Date.now() + '_' + i,
+          name:      r.Name      || '',
+          platform:  r.Platform  || '',
+          status:    r.Status    || 'active',
+          package:   r.Package   || '',
+          budget:    Number(r.Budget) || 0,
+          startDate: r.StartDate || '',
+          endDate:   r.EndDate   || '',
+          tenure:    r.Tenure    || '',
+          executive: r.Executive || '',
+          designer:  r.Designer  || '',
+          pm:        r.Lead      || '',
+          brief:     r.Brief     || ''
+        })).filter(c => c.name);
+
+        if (!pulled.length) { showToast('No valid rows found in sheet', 'error'); return; }
+
+        // Merge: keep existing clients by name, add new ones from sheet
+        const existing = APP.clients;
+        const merged = [...existing];
+        let added = 0, updated = 0;
+        pulled.forEach(sc => {
+          const idx = merged.findIndex(c => c.name.toLowerCase() === sc.name.toLowerCase());
+          if (idx >= 0) {
+            // Update existing — preserve id
+            merged[idx] = { ...merged[idx], ...sc, id: merged[idx].id };
+            updated++;
+          } else {
+            merged.push(sc);
+            added++;
+          }
+        });
+
+        APP.clients = merged;
+
+        // Save to Railway if connected
+        if (APP.useAPI) {
+          Promise.all(pulled.map(c => {
+            const existing = APP.clients.find(e => e.name.toLowerCase() === c.name.toLowerCase());
+            return apiSaveClient(existing || c);
+          })).then(() => syncFromAPI()).then(() => { renderStats(); renderClients(); });
+        } else {
+          saveData(); renderStats(); renderClients();
+        }
+
+        showToast(`Sheet pulled: ${added} added, ${updated} updated ✓`);
+      };
+
+      const script = document.createElement('script');
+      script.id = '_sheetsScript';
+      script.src = SHEETS_URL + '?action=getClients&callback=' + cbName;
+      script.onerror = () => {
+        cleanup();
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-cloud-arrow-down mr-2 text-xs"></i>Pull from Sheets';
+        showToast('Could not reach Google Sheets — redeploy your Apps Script', 'error');
+      };
+      document.head.appendChild(script);
     }
   </script>
 </body>
