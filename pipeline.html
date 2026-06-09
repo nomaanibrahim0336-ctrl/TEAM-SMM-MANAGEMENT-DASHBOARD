@@ -394,7 +394,6 @@
       const topic = document.getElementById('taskTopic').value.trim();
       const due = document.getElementById('taskDue').value;
       if (!clientId) { showToast('Please select a client.', 'error'); return; }
-      if (!topic)    { showToast('Please enter a topic/title.', 'error'); return; }
       const task = {
         id: 't' + Date.now(),
         clientId,
