@@ -388,11 +388,13 @@
     }
 
     function saveTask() {
+      const currentUser = APP.currentUser;
       const clientId = document.getElementById('taskClient').value;
       const client = APP.clients.find(c => c.id === clientId);
       const topic = document.getElementById('taskTopic').value.trim();
       const due = document.getElementById('taskDue').value;
       if (!clientId) { showToast('Please select a client.', 'error'); return; }
+      if (!topic)    { showToast('Please enter a topic/title.', 'error'); return; }
       const task = {
         id: 't' + Date.now(),
         clientId,
@@ -400,29 +402,35 @@
         contentType: document.getElementById('taskType').value,
         platform: document.getElementById('taskPlatform').value,
         topic,
+        title: topic,
         brief: document.getElementById('taskBrief').value.trim(),
         instructions: document.getElementById('taskInstructions').value.trim(),
         dueDate: due,
         priority: document.getElementById('taskPriority').value,
         status: 'new',
-        createdBy: user ? user.name : 'You',
+        createdBy: currentUser ? currentUser.name : 'You',
         assignedTo: client.executive || client.pm || '',
         designer: client.designer || '',
         createdDate: new Date().toISOString().split('T')[0],
         comments: [],
-        timeline: [{ action: 'Task created', by: 'You', date: new Date().toISOString().split('T')[0] }],
+        timeline: [{ action: 'Task created', by: currentUser ? currentUser.name : 'You', date: new Date().toISOString().split('T')[0] }],
       };
       APP.tasks.push(task);
       saveData(); apiSaveTask(task); renderBoard(); closeTaskModal();
+      showToast('Task created successfully!');
     }
 
     function populateClientFilter() {
-      const sel = document.getElementById('pipelineFilter');
+      const sel  = document.getElementById('pipelineFilter');
       const sel2 = document.getElementById('taskClient');
+      const pVal = sel.value;
+      sel.innerHTML  = '<option value="">All Clients</option>';
+      sel2.innerHTML = '<option value="">Select Client</option>';
       APP.clients.forEach(c => {
-        sel.innerHTML += `<option value="${c.id}">${c.name}</option>`;
+        sel.innerHTML  += `<option value="${c.id}">${c.name}</option>`;
         sel2.innerHTML += `<option value="${c.id}">${c.name}</option>`;
       });
+      if (pVal) sel.value = pVal;
     }
 
     document.addEventListener('DOMContentLoaded', () => {
@@ -438,7 +446,7 @@
       window._visibleTasks = getVisibleTasks(APP.tasks, user);
       populateClientFilter();
       renderBoard();
-      document.addEventListener('smm:synced', () => { window._visibleTasks = getVisibleTasks(APP.tasks, user); renderBoard(); });
+      document.addEventListener('smm:synced', () => { window._visibleTasks = getVisibleTasks(APP.tasks, user); populateClientFilter(); renderBoard(); });
     });
   </script>
 </body>
