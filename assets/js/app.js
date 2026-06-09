@@ -63,7 +63,7 @@ function normalizeClient(c) {
 function normalizeTask(t) {
   return {
     id: t.id, clientId: t.client_id || t.clientId, clientName: t.client_name || t.clientName,
-    title: t.title, platform: t.platform, contentType: t.content_type || t.contentType,
+    title: t.title || t.topic || '', platform: t.platform, contentType: t.content_type || t.contentType,
     status: t.status, priority: t.priority, assignedTo: t.assigned_to || t.assignedTo,
     designer: t.designer, createdBy: t.created_by || t.createdBy,
     dueDate: t.due_date || t.dueDate, postedDate: t.posted_date || t.postedDate,

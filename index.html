@@ -74,7 +74,7 @@
       const due = daysUntil(t.dueDate);
 
       document.getElementById('ctClientName').textContent = t.clientName;
-      document.getElementById('ctTaskMeta').textContent = `${t.contentType} — ${t.topic} · ${t.platform}`;
+      document.getElementById('ctTaskMeta').textContent = `${t.contentType} — ${t.title || t.topic || '—'} · ${t.platform}`;
       document.getElementById('ctBody').innerHTML = `
         <div class="grid grid-cols-2 gap-3">
           <div class="bg-gray-800 rounded-lg p-3">
@@ -217,7 +217,7 @@
             <div class="flex items-center gap-3 flex-1 min-w-0">
               <span class="priority-dot ${pDot}"></span>
               <div class="min-w-0">
-                <p class="text-sm font-medium text-white truncate">${t.clientName} — ${t.topic}</p>
+                <p class="text-sm font-medium text-white truncate">${t.clientName} — ${t.title || t.topic || '—'}</p>
                 <p class="text-xs text-gray-500 capitalize">${t.contentType} · ${t.platform}</p>
               </div>
             </div>
@@ -291,7 +291,7 @@
                     <div class="flex items-center gap-2 mb-0.5">
                       <span class="text-sm font-semibold text-white">${t.clientName}</span>
                       <span class="text-xs text-gray-500">·</span>
-                      <span class="text-xs text-gray-400">${t.contentType} — ${t.topic}</span>
+                      <span class="text-xs text-gray-400">${t.contentType} — ${t.title || t.topic || '—'}</span>
                     </div>
                     <p class="text-xs text-red-300 truncate"><i class="fa-solid fa-comment-dots mr-1 text-red-500/60"></i>${latestNote}</p>
                   </div>
