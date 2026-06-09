@@ -42,6 +42,9 @@
         <select id="assigneeFilter" class="form-input w-auto text-sm py-2" onchange="renderTasks()">
           <option value="">All Members</option>
         </select>
+        <button onclick="exportTasksToSheets()" class="flex items-center gap-2 bg-green-600 hover:bg-green-500 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors whitespace-nowrap">
+          <i class="fa-brands fa-google text-xs"></i> Export to Sheets
+        </button>
         <div id="newTaskBtnWrap"></div>
       </div>
     </header>
@@ -504,6 +507,27 @@
       renderTasks();
       document.addEventListener('smm:synced', () => { window._visibleTasks = getVisibleTasks(APP.tasks, user); renderTasks(); });
     });
+
+    const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbyfnzWLwUIRMe3r_JjsC6pkJ3C__eAU1cK3DAF2gzd-8K1cJTP8-deAt8k2WIJsx2wMmA/exec';
+
+    async function exportTasksToSheets() {
+      const btn = event.currentTarget;
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2 text-xs"></i>Exporting…';
+      try {
+        await fetch(SHEETS_URL, {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ type: 'tasks', rows: APP.tasks })
+        });
+        showToast('Tasks exported to Google Sheets ✓');
+      } catch(err) {
+        showToast('Export failed — ' + err.message, 'error');
+      }
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fa-brands fa-google mr-2 text-xs"></i>Export to Sheets';
+    }
   </script>
 </body>
 </html>
