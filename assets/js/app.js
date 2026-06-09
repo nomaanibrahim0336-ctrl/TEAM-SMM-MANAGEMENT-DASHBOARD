@@ -88,36 +88,49 @@ function saveData() {
 }
 
 // API write helpers — called alongside localStorage saves
+// After every write, re-sync from API and fire smm:synced so all pages re-render instantly
+async function _afterWrite() {
+  if (!APP.useAPI) return;
+  await syncFromAPI();
+  document.dispatchEvent(new CustomEvent('smm:synced'));
+}
+
 async function apiSaveClient(client) {
   if (!APP.useAPI) return;
-  try { await apiFetch('/clients', { method: 'POST', body: {
-    id: client.id, name: client.name, platform: client.platform,
-    status: client.status, package: client.package, budget: client.budget,
-    start_date: client.startDate, end_date: client.endDate, tenure: client.tenure,
-    brief: client.brief, executive: client.executive, designer: client.designer, pm: client.pm
-  }}); } catch(e) { console.warn('apiSaveClient:', e.message); }
+  try {
+    await apiFetch('/clients', { method: 'POST', body: {
+      id: client.id, name: client.name, platform: client.platform,
+      status: client.status, package: client.package, budget: client.budget,
+      start_date: client.startDate, end_date: client.endDate, tenure: client.tenure,
+      brief: client.brief, executive: client.executive, designer: client.designer, pm: client.pm
+    }});
+    await _afterWrite();
+  } catch(e) { console.warn('apiSaveClient:', e.message); }
 }
 async function apiDeleteClient(id) {
   if (!APP.useAPI) return;
-  try { await apiFetch(`/clients/${id}`, { method: 'DELETE' }); } catch(e) { console.warn(e.message); }
+  try { await apiFetch(`/clients/${id}`, { method: 'DELETE' }); await _afterWrite(); } catch(e) { console.warn(e.message); }
 }
 async function apiSaveTask(task) {
   if (!APP.useAPI) return;
-  try { await apiFetch('/tasks', { method: 'POST', body: {
-    id: task.id, client_id: task.clientId, client_name: task.clientName,
-    title: task.title, platform: task.platform, content_type: task.contentType,
-    status: task.status, priority: task.priority, assigned_to: task.assignedTo,
-    designer: task.designer, created_by: task.createdBy,
-    due_date: task.dueDate, brief: task.brief
-  }}); } catch(e) { console.warn('apiSaveTask:', e.message); }
+  try {
+    await apiFetch('/tasks', { method: 'POST', body: {
+      id: task.id, client_id: task.clientId, client_name: task.clientName,
+      title: task.title || task.topic, platform: task.platform, content_type: task.contentType,
+      status: task.status, priority: task.priority, assigned_to: task.assignedTo,
+      designer: task.designer, created_by: task.createdBy,
+      due_date: task.dueDate, brief: task.brief
+    }});
+    await _afterWrite();
+  } catch(e) { console.warn('apiSaveTask:', e.message); }
 }
 async function apiUpdateTask(id, fields) {
   if (!APP.useAPI) return;
-  try { await apiFetch(`/tasks/${id}`, { method: 'PUT', body: fields }); } catch(e) { console.warn(e.message); }
+  try { await apiFetch(`/tasks/${id}`, { method: 'PUT', body: fields }); await _afterWrite(); } catch(e) { console.warn(e.message); }
 }
 async function apiDeleteTask(id) {
   if (!APP.useAPI) return;
-  try { await apiFetch(`/tasks/${id}`, { method: 'DELETE' }); } catch(e) { console.warn(e.message); }
+  try { await apiFetch(`/tasks/${id}`, { method: 'DELETE' }); await _afterWrite(); } catch(e) { console.warn(e.message); }
 }
 async function apiSaveMember(member) {
   if (!APP.useAPI) return;
@@ -127,11 +140,12 @@ async function apiSaveMember(member) {
     } else {
       await apiFetch('/team', { method: 'POST', body: member });
     }
+    await _afterWrite();
   } catch(e) { console.warn('apiSaveMember:', e.message); }
 }
 async function apiDeleteMember(id) {
   if (!APP.useAPI) return;
-  try { await apiFetch(`/team/${id}`, { method: 'DELETE' }); } catch(e) { console.warn(e.message); }
+  try { await apiFetch(`/team/${id}`, { method: 'DELETE' }); await _afterWrite(); } catch(e) { console.warn(e.message); }
 }
 
 // ===== SAMPLE DATA =====
