@@ -536,6 +536,7 @@
       window._visibleTasks = getVisibleTasks(APP.tasks, user);
       populateClientFilter();
       renderBoard();
+      if (APP.useAPI) syncFromAPI().then(() => { window._visibleTasks = getVisibleTasks(APP.tasks, user); populateClientFilter(); renderBoard(); });
       document.addEventListener('smm:synced', () => { window._visibleTasks = getVisibleTasks(APP.tasks, user); populateClientFilter(); renderBoard(); });
     });
   </script>

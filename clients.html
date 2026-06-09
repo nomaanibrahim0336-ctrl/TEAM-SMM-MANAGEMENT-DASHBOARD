@@ -638,6 +638,7 @@
       }
       renderStats();
       renderClients();
+      if (APP.useAPI) syncFromAPI().then(() => { renderStats(); renderClients(); });
       document.addEventListener('smm:synced', () => { renderStats(); renderClients(); });
     });
 

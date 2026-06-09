@@ -453,6 +453,8 @@
       if (!user) return;
       renderAdmin();
       updateAPIStatusBadge();
+      if (APP.useAPI) syncFromAPI().then(() => renderAdmin());
+      document.addEventListener('smm:synced', () => renderAdmin());
     });
 
     function updateAPIStatusBadge() {

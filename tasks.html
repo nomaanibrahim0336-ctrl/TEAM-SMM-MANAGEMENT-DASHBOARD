@@ -313,45 +313,45 @@
     }
 
     function moveTask(id, status) {
-      const t = APP.tasks.find(t => t.id === id);
-      if (!t) return;
-
       if (status === 'posted') {
         showPostedDateModal(id, (date, scheduledTill, note) => {
-          t.status = 'posted';
-          t.postedDate = date;
-          t.scheduledTill = scheduledTill;
-          t.postedNote = note;
+          const all = APP.tasks; const t = all.find(t => t.id === id); if (!t) return;
+          t.status = 'posted'; t.postedDate = date; t.scheduledTill = scheduledTill; t.postedNote = note;
           t.timeline = t.timeline || [];
           const label = `Posted on ${formatDate(date)}` + (scheduledTill ? ` — Scheduled till: ${formatDate(scheduledTill)}` : '');
-          t.timeline.push({ action: label + (note ? ` — ${note}` : ''), by: 'You', date });
-          saveData(); apiUpdateTask(t.id, { status:'posted', posted_date: date, scheduled_till: scheduledTill, timeline_action: label + (note ? ` — ${note}` : '') }); renderTasks(); closeDetail();
-          showToast('Task marked as Posted!');
+          t.timeline.push({ action: label + (note ? ` — ${note}` : ''), by: APP.currentUser?.name||'You', date });
+          APP.tasks = all;
+          apiUpdateTask(id, { status:'posted', posted_date: date, scheduled_till: scheduledTill, timeline_action: label + (note ? ` — ${note}` : '') });
+          renderTasks(); closeDetail(); showToast('Task marked as Posted!');
         });
         return;
       }
 
       if (status === 'changes_requested') {
-        showChangesModal(id, () => { saveData(); renderTasks(); closeDetail(); });
+        showChangesModal(id, () => {
+          const all = APP.tasks; const t = all.find(t => t.id === id);
+          if (t) { t.status = 'changes_requested'; APP.tasks = all; }
+          renderTasks(); closeDetail();
+        });
         return;
       }
 
-      t.status = status;
-      t.timeline = t.timeline || [];
+      const all = APP.tasks; const t = all.find(t => t.id === id); if (!t) return;
+      t.status = status; t.timeline = t.timeline || [];
       const moveLabel = `Moved to ${status.replace(/_/g,' ')}`;
-      t.timeline.push({ action: moveLabel, by: 'You', date: new Date().toISOString().split('T')[0] });
-      saveData(); apiUpdateTask(t.id, { status, timeline_action: moveLabel }); renderTasks(); closeDetail();
+      t.timeline.push({ action: moveLabel, by: APP.currentUser?.name||'You', date: new Date().toISOString().split('T')[0] });
+      APP.tasks = all;
+      apiUpdateTask(id, { status, timeline_action: moveLabel }); renderTasks(); closeDetail();
     }
 
     function addComment(taskId) {
       const input = document.getElementById('commentInput');
       const text = input.value.trim();
       if (!text) return;
-      const t = APP.tasks.find(t => t.id === taskId);
-      if (!t) return;
+      const all = APP.tasks; const t = all.find(t => t.id === taskId); if (!t) return;
       t.comments = t.comments || [];
-      t.comments.push({ by: 'You', text, date: new Date().toISOString().split('T')[0] });
-      saveData(); input.value = ''; viewTask(taskId);
+      t.comments.push({ by: APP.currentUser?.name||'You', text, date: new Date().toISOString().split('T')[0] });
+      APP.tasks = all; input.value = ''; viewTask(taskId);
     }
 
     function showChangesModal(taskId, onDone) {
@@ -401,46 +401,40 @@
     }
 
     function saveTaskEdit(id) {
-      const t = APP.tasks.find(t => t.id === id);
-      if (!t) return;
+      const all = APP.tasks; const t = all.find(t => t.id === id); if (!t) return;
       const today = new Date().toISOString().split('T')[0];
-      const user  = APP.currentUser;
       const changes = [];
       const newDue      = document.getElementById('editDue').value;
       const newPriority = document.getElementById('editPriority').value;
       const newAssignee = document.getElementById('editAssignee').value;
       const newDesigner = document.getElementById('editDesigner').value;
-      if (newDue      !== t.dueDate)    changes.push(`Due date → ${formatDate(newDue)}`);
-      if (newPriority !== t.priority)   changes.push(`Priority → ${newPriority}`);
+      if (newDue      !== t.dueDate)         changes.push(`Due date → ${formatDate(newDue)}`);
+      if (newPriority !== t.priority)        changes.push(`Priority → ${newPriority}`);
       if (newAssignee !== (t.assignedTo||'')) changes.push(`Executive → ${newAssignee||'None'}`);
       if (newDesigner !== (t.designer||''))   changes.push(`Designer → ${newDesigner||'None'}`);
       if (!changes.length) { showToast('No changes made.'); return; }
-      t.dueDate    = newDue;
-      t.priority   = newPriority;
-      t.assignedTo = newAssignee;
-      t.designer   = newDesigner;
-      t.timeline   = t.timeline || [];
-      t.timeline.push({ action: `Edited: ${changes.join(', ')}`, by: user ? user.name : 'You', date: today });
-      saveData(); apiUpdateTask(t.id, { due_date: t.dueDate, priority: t.priority, assigned_to: t.assignedTo, designer: t.designer, timeline_action: `Edited: ${changes.join(', ')}` }); renderTasks(); viewTask(id);
-      showToast('Task updated.');
+      t.dueDate = newDue; t.priority = newPriority; t.assignedTo = newAssignee; t.designer = newDesigner;
+      t.timeline = t.timeline || [];
+      t.timeline.push({ action: `Edited: ${changes.join(', ')}`, by: APP.currentUser?.name||'You', date: today });
+      APP.tasks = all;
+      apiUpdateTask(id, { due_date: newDue, priority: newPriority, assigned_to: newAssignee, designer: newDesigner, timeline_action: `Edited: ${changes.join(', ')}` });
+      renderTasks(); viewTask(id); showToast('Task updated.');
     }
 
     function resolveChanges(id) {
-      const t = APP.tasks.find(t => t.id === id);
-      if (!t) return;
+      const all = APP.tasks; const t = all.find(t => t.id === id); if (!t) return;
       const today = new Date().toISOString().split('T')[0];
-      const user  = APP.currentUser;
-      t.status = 'with_designer';
-      t.timeline = t.timeline || [];
-      t.timeline.push({ action: 'Changes resolved — moved back to With Designer', by: user ? user.name : 'You', date: today });
-      saveData(); apiUpdateTask(t.id, { status:'with_designer', changes_requested: false, timeline_action:'Changes resolved — moved back to With Designer' }); renderTasks(); viewTask(id);
-      showToast('Change request resolved.');
+      t.status = 'with_designer'; t.timeline = t.timeline || [];
+      t.timeline.push({ action: 'Changes resolved — moved back to With Designer', by: APP.currentUser?.name||'You', date: today });
+      APP.tasks = all;
+      apiUpdateTask(id, { status:'with_designer', changes_requested: false, timeline_action:'Changes resolved — moved back to With Designer' });
+      renderTasks(); viewTask(id); showToast('Change request resolved.');
     }
 
     function deleteTask(id) {
       if (!confirm('Delete this task?')) return;
       APP.tasks = APP.tasks.filter(t => t.id !== id);
-      apiDeleteTask(id); saveData(); renderTasks();
+      apiDeleteTask(id); renderTasks();
     }
 
     function closeDetail() { document.getElementById('taskDetailModal').classList.remove('open'); }
@@ -506,6 +500,7 @@
       });
       window._visibleTasks = getVisibleTasks(APP.tasks, user);
       renderTasks();
+      if (APP.useAPI) syncFromAPI().then(() => { window._visibleTasks = getVisibleTasks(APP.tasks, user); renderTasks(); });
       document.addEventListener('smm:synced', () => { window._visibleTasks = getVisibleTasks(APP.tasks, user); renderTasks(); });
     });
 
