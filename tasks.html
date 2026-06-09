@@ -233,7 +233,8 @@
               <div class="flex justify-between"><span class="text-xs text-gray-500">Executive</span><span class="text-sm text-blue-400">${t.assignedTo||'—'}</span></div>
               <div class="flex justify-between"><span class="text-xs text-gray-500">Designer</span><span class="text-sm text-pink-400">${t.designer||'—'}</span></div>
               <div class="flex justify-between"><span class="text-xs text-gray-500">Created by</span><span class="text-sm text-white">${t.createdBy}</span></div>
-              ${t.postedDate ? `<div class="flex justify-between"><span class="text-xs text-gray-500">Posted</span><span class="text-sm text-green-400 font-medium">${formatDate(t.postedDate)}${t.postedTime ? ' at '+t.postedTime : ''}</span></div>` : ''}
+              ${t.postedDate ? `<div class="flex justify-between"><span class="text-xs text-gray-500">Posted</span><span class="text-sm text-green-400 font-medium">${formatDate(t.postedDate)}</span></div>` : ''}
+              ${t.lastPostedDate ? `<div class="flex justify-between"><span class="text-xs text-gray-500">Last Posted</span><span class="text-sm text-gray-400">${formatDate(t.lastPostedDate)}</span></div>` : ''}
               ${t.postedNote ? `<div class="flex justify-between"><span class="text-xs text-gray-500">Post Note</span><span class="text-sm text-gray-300">${t.postedNote}</span></div>` : ''}
             </div>
           </div>
@@ -316,13 +317,13 @@
       if (!t) return;
 
       if (status === 'posted') {
-        showPostedDateModal(id, (date, time, note) => {
+        showPostedDateModal(id, (date, lastDate, note) => {
           t.status = 'posted';
           t.postedDate = date;
-          t.postedTime = time;
+          t.lastPostedDate = lastDate;
           t.postedNote = note;
           t.timeline = t.timeline || [];
-          const label = time ? `Posted on ${date} at ${time}` : `Posted on ${date}`;
+          const label = `Posted on ${formatDate(date)}` + (lastDate ? ` (Last posted: ${formatDate(lastDate)})` : '');
           t.timeline.push({ action: label + (note ? ` — ${note}` : ''), by: 'You', date });
           saveData(); apiUpdateTask(t.id, { status:'posted', posted_date: date, timeline_action: label + (note ? ` — ${note}` : '') }); renderTasks(); closeDetail();
           showToast('Task marked as Posted!');

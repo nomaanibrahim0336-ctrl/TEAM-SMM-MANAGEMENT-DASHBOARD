@@ -494,20 +494,19 @@ function showPostedDateModal(taskId, onConfirm) {
         </button>
       </div>
       <div class="p-6 space-y-4">
-        <div class="flex items-center gap-3 bg-green-500/10 border border-green-500/20 rounded-lg px-4 py-3">
-          <i class="fa-solid fa-calendar-check text-green-400"></i>
-          <div>
-            <p class="text-sm font-medium text-white">Posted Date: <span class="text-green-400">${new Date().toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric'})}</span></p>
-            <p class="text-xs text-gray-500 mt-0.5">Automatically set to today</p>
-          </div>
+        <div>
+          <label class="form-label">Posted Date</label>
+          <input id="_postedDateInput" type="date" class="form-input" value="${today}" max="${today}"/>
+          <p class="text-xs text-gray-500 mt-1">Set to today by default — change if it was posted on a different day</p>
         </div>
         <div>
-          <label class="form-label">Posted Time (optional)</label>
-          <input id="_postedTimeInput" type="time" class="form-input"/>
+          <label class="form-label">Last Posted Date (previous cycle, optional)</label>
+          <input id="_lastPostedInput" type="date" class="form-input" max="${today}"/>
+          <p class="text-xs text-gray-500 mt-1">For tracking recurring content history</p>
         </div>
         <div>
           <label class="form-label">Post Link / Notes (optional)</label>
-          <input id="_postedNoteInput" type="text" class="form-input" placeholder="e.g. Instagram link or any note"/>
+          <input id="_postedNoteInput" type="text" class="form-input" placeholder="e.g. Instagram post link or any note"/>
         </div>
       </div>
       <div class="flex justify-end gap-3 px-6 py-4 border-t border-gray-800">
@@ -521,10 +520,11 @@ function showPostedDateModal(taskId, onConfirm) {
   document.body.appendChild(overlay);
 
   document.getElementById('_postedConfirmBtn').onclick = () => {
-    const time = document.getElementById('_postedTimeInput').value || '';
-    const note = document.getElementById('_postedNoteInput').value.trim() || '';
+    const date     = document.getElementById('_postedDateInput').value || today;
+    const lastDate = document.getElementById('_lastPostedInput').value || '';
+    const note     = document.getElementById('_postedNoteInput').value.trim() || '';
     overlay.remove();
-    onConfirm(today, time, note);
+    onConfirm(date, lastDate, note);
   };
 
   // Close on overlay click
