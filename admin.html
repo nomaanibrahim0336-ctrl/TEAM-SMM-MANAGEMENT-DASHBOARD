@@ -305,29 +305,46 @@
 
     function closeMemberModal() { document.getElementById('memberModal').classList.remove('open'); }
 
-    function saveMember() {
-      const id = document.getElementById('memberId').value;
+    async function saveMember() {
+      const id   = document.getElementById('memberId').value;
       const name = document.getElementById('memberName').value.trim();
       const email = document.getElementById('memberEmail').value.trim();
       const role = document.getElementById('memberRole').value;
-      const pw = document.getElementById('memberPassword').value;
-      const cpw = document.getElementById('memberPasswordConfirm').value;
+      const pw   = document.getElementById('memberPassword').value;
+      const cpw  = document.getElementById('memberPasswordConfirm').value;
       if (!name) { alert('Name is required.'); return; }
       if (pw && pw !== cpw) { alert('Passwords do not match.'); return; }
+
+      if (APP.useAPI) {
+        // API-first: let Railway create/update, then sync
+        try {
+          if (id) {
+            await apiFetch(`/team/${id}`, { method: 'PUT', body: { name, email, role, avatar: name[0].toUpperCase(), password: pw || undefined } });
+          } else {
+            await apiFetch('/team', { method: 'POST', body: { name, email, role, avatar: name[0].toUpperCase(), password: pw || 'changeme123' } });
+          }
+          await syncFromAPI();
+          document.dispatchEvent(new CustomEvent('smm:synced'));
+          renderAdmin(); closeMemberModal();
+          showToast(id ? 'Member updated.' : 'Member added.');
+        } catch(e) {
+          showToast('Error: ' + e.message, 'error');
+        }
+        return;
+      }
+
+      // localStorage fallback
       if (id) {
         const idx = APP.team.findIndex(u => u.id === id);
         if (idx !== -1) {
-          APP.team[idx].name = name;
-          APP.team[idx].email = email;
-          APP.team[idx].role = role;
-          APP.team[idx].avatar = name[0].toUpperCase();
+          APP.team[idx].name = name; APP.team[idx].email = email;
+          APP.team[idx].role = role; APP.team[idx].avatar = name[0].toUpperCase();
           if (pw) APP.team[idx].password = pw;
         }
       } else {
         APP.team.push({ id: 'u' + Date.now(), name, email, role, password: pw || '', avatar: name[0].toUpperCase(), color: 'bg-gray-700' });
       }
-      const savedMember = id ? APP.team.find(u => u.id === id) : APP.team[APP.team.length-1];
-      saveData(); apiSaveMember({...savedMember, password: pw||undefined}); renderAdmin(); closeMemberModal();
+      saveData(); renderAdmin(); closeMemberModal();
     }
 
     function deleteMember(id) {
