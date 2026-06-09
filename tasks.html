@@ -321,7 +321,7 @@
           t.timeline = t.timeline || [];
           const label = time ? `Posted on ${date} at ${time}` : `Posted on ${date}`;
           t.timeline.push({ action: label + (note ? ` — ${note}` : ''), by: 'You', date });
-          saveData(); renderTasks(); closeDetail();
+          saveData(); apiUpdateTask(t.id, { status:'posted', posted_date: date, timeline_action: label + (note ? ` — ${note}` : '') }); renderTasks(); closeDetail();
           showToast('Task marked as Posted!');
         });
         return;
@@ -334,8 +334,9 @@
 
       t.status = status;
       t.timeline = t.timeline || [];
-      t.timeline.push({ action: `Moved to ${status.replace(/_/g,' ')}`, by: 'You', date: new Date().toISOString().split('T')[0] });
-      saveData(); renderTasks(); closeDetail();
+      const moveLabel = `Moved to ${status.replace(/_/g,' ')}`;
+      t.timeline.push({ action: moveLabel, by: 'You', date: new Date().toISOString().split('T')[0] });
+      saveData(); apiUpdateTask(t.id, { status, timeline_action: moveLabel }); renderTasks(); closeDetail();
     }
 
     function addComment(taskId) {
@@ -389,6 +390,7 @@
       t.comments.push({ by: user ? user.name : 'You', text: note, date: today, type: 'change_request' });
       t.timeline = t.timeline || [];
       t.timeline.push({ action: `Changes requested: "${note}"`, by: user ? user.name : 'You', date: today });
+      apiUpdateTask(t.id, { status:'changes_requested', changes_requested: true, change_note: note, timeline_action: `Changes requested: "${note}"` });
       document.getElementById('changesModal').remove();
       if (window._changesCallback) window._changesCallback();
       showToast('Changes requested and logged.');
@@ -415,7 +417,7 @@
       t.designer   = newDesigner;
       t.timeline   = t.timeline || [];
       t.timeline.push({ action: `Edited: ${changes.join(', ')}`, by: user ? user.name : 'You', date: today });
-      saveData(); renderTasks(); viewTask(id);
+      saveData(); apiUpdateTask(t.id, { due_date: t.dueDate, priority: t.priority, assigned_to: t.assignedTo, designer: t.designer, timeline_action: `Edited: ${changes.join(', ')}` }); renderTasks(); viewTask(id);
       showToast('Task updated.');
     }
 
@@ -427,14 +429,14 @@
       t.status = 'with_designer';
       t.timeline = t.timeline || [];
       t.timeline.push({ action: 'Changes resolved — moved back to With Designer', by: user ? user.name : 'You', date: today });
-      saveData(); renderTasks(); viewTask(id);
+      saveData(); apiUpdateTask(t.id, { status:'with_designer', changes_requested: false, timeline_action:'Changes resolved — moved back to With Designer' }); renderTasks(); viewTask(id);
       showToast('Change request resolved.');
     }
 
     function deleteTask(id) {
       if (!confirm('Delete this task?')) return;
       APP.tasks = APP.tasks.filter(t => t.id !== id);
-      saveData(); renderTasks();
+      apiDeleteTask(id); saveData(); renderTasks();
     }
 
     function closeDetail() { document.getElementById('taskDetailModal').classList.remove('open'); }
@@ -480,7 +482,8 @@
         createdDate: new Date().toISOString().split('T')[0], comments: [],
         timeline: [{ action: 'Task created', by: user ? user.name : 'You', date: new Date().toISOString().split('T')[0] }],
       });
-      saveData(); renderTasks(); closeNewTask();
+      const newTask = APP.tasks[APP.tasks.length - 1];
+      saveData(); apiSaveTask(newTask); renderTasks(); closeNewTask();
     }
 
     document.addEventListener('DOMContentLoaded', () => {
@@ -499,6 +502,7 @@
       });
       window._visibleTasks = getVisibleTasks(APP.tasks, user);
       renderTasks();
+      document.addEventListener('smm:synced', () => { window._visibleTasks = getVisibleTasks(APP.tasks, user); renderTasks(); });
     });
   </script>
 </body>

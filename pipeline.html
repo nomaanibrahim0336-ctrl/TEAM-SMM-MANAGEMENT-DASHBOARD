@@ -196,8 +196,9 @@
       if (task && task.status !== newStatus) {
         task.status = newStatus;
         task.timeline = task.timeline || [];
-        task.timeline.push({ action: `Moved to ${COLUMNS.find(c=>c.id===newStatus)?.label}`, by: 'You', date: new Date().toISOString().split('T')[0] });
-        saveData();
+        const dropLabel = `Moved to ${COLUMNS.find(c=>c.id===newStatus)?.label}`;
+        task.timeline.push({ action: dropLabel, by: 'You', date: new Date().toISOString().split('T')[0] });
+        saveData(); apiUpdateTask(task.id, { status: newStatus, timeline_action: dropLabel });
         renderBoard();
       }
       draggedId = null;
@@ -294,7 +295,7 @@
           task.timeline = task.timeline || [];
           const label = time ? `Posted on ${date} at ${time}` : `Posted on ${date}`;
           task.timeline.push({ action: label + (note ? ` — ${note}` : ''), by: 'You', date });
-          saveData(); renderBoard(); closeTaskDetail();
+          saveData(); apiUpdateTask(task.id, { status:'posted', posted_date: date, timeline_action: label + (note ? ` — ${note}` : '') }); renderBoard(); closeTaskDetail();
           showToast('Task marked as Posted!');
         });
         return;
@@ -307,8 +308,9 @@
 
       task.status = newStatus;
       task.timeline = task.timeline || [];
-      task.timeline.push({ action: `Moved to ${COLUMNS.find(c=>c.id===newStatus)?.label}`, by: 'You', date: new Date().toISOString().split('T')[0] });
-      saveData(); renderBoard(); closeTaskDetail();
+      const moveLabel2 = `Moved to ${COLUMNS.find(c=>c.id===newStatus)?.label}`;
+      task.timeline.push({ action: moveLabel2, by: 'You', date: new Date().toISOString().split('T')[0] });
+      saveData(); apiUpdateTask(task.id, { status: newStatus, timeline_action: moveLabel2 }); renderBoard(); closeTaskDetail();
     }
 
     function showChangesModal(taskId, onDone) {
@@ -351,6 +353,7 @@
       task.comments.push({ by: user ? user.name : 'You', text: note, date: today, type: 'change_request' });
       task.timeline = task.timeline || [];
       task.timeline.push({ action: `Changes requested: "${note}"`, by: user ? user.name : 'You', date: today });
+      apiUpdateTask(task.id, { status:'changes_requested', changes_requested: true, change_note: note, timeline_action: `Changes requested: "${note}"` });
       document.getElementById('changesModal').remove();
       if (window._changesCallback) window._changesCallback();
       showToast('Changes requested and logged.');
@@ -410,7 +413,7 @@
         timeline: [{ action: 'Task created', by: 'You', date: new Date().toISOString().split('T')[0] }],
       };
       APP.tasks.push(task);
-      saveData(); renderBoard(); closeTaskModal();
+      saveData(); apiSaveTask(task); renderBoard(); closeTaskModal();
     }
 
     function populateClientFilter() {
@@ -435,6 +438,7 @@
       window._visibleTasks = getVisibleTasks(APP.tasks, user);
       populateClientFilter();
       renderBoard();
+      document.addEventListener('smm:synced', () => { window._visibleTasks = getVisibleTasks(APP.tasks, user); renderBoard(); });
     });
   </script>
 </body>

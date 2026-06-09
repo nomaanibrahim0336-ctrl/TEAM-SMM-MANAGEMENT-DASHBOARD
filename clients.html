@@ -443,7 +443,7 @@
       } else {
         APP.clients.push(data);
       }
-      saveData(); renderClients(); renderStats(); closeClientModal();
+      saveData(); apiSaveClient(data); renderClients(); renderStats(); closeClientModal();
     }
 
     function editClient(id) {
@@ -461,7 +461,7 @@
       if (!confirm(msg)) return;
       APP.clients = APP.clients.filter(c => c.id !== id);
       APP.tasks   = APP.tasks.filter(t => t.clientId !== id);
-      saveData(); renderClients(); renderStats();
+      apiDeleteClient(id); saveData(); renderClients(); renderStats();
     }
 
     function viewClient(id) {
@@ -618,7 +618,7 @@
       APP.clients[idx].tenure    = tenure;
       APP.clients[idx].status    = 'active';
       if (budget) APP.clients[idx].budget = parseInt(budget);
-      saveData(); renderClients(); renderStats();
+      saveData(); apiSaveClient(APP.clients[idx]); renderClients(); renderStats();
       closeRenewalModal();
       showToast(`Contract renewed until ${formatDate(end)}`);
     }
@@ -635,6 +635,7 @@
       }
       renderStats();
       renderClients();
+      document.addEventListener('smm:synced', () => { renderStats(); renderClients(); });
     });
   </script>
 </body>

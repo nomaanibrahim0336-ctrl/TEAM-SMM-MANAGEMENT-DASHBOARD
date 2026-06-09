@@ -326,7 +326,8 @@
       } else {
         APP.team.push({ id: 'u' + Date.now(), name, email, role, password: pw || '', avatar: name[0].toUpperCase(), color: 'bg-gray-700' });
       }
-      saveData(); renderAdmin(); closeMemberModal();
+      const savedMember = id ? APP.team.find(u => u.id === id) : APP.team[APP.team.length-1];
+      saveData(); apiSaveMember({...savedMember, password: pw||undefined}); renderAdmin(); closeMemberModal();
     }
 
     function deleteMember(id) {
@@ -354,7 +355,7 @@
         return updated;
       });
       APP.team = APP.team.filter(m => m.id !== id);
-      saveData(); renderAdmin();
+      apiDeleteMember(id); saveData(); renderAdmin();
     }
 
     // Change Password
@@ -379,7 +380,7 @@
       document.getElementById('pwError').classList.add('hidden');
       const idx = APP.team.findIndex(u => u.id === id);
       if (idx !== -1) APP.team[idx].password = pw;
-      saveData();
+      saveData(); if(APP.useAPI) apiFetch(`/team/${id}/password`,{method:'PUT',body:{password:pw}});
       // Show success state inside modal
       const body = document.querySelector('#pwModal .p-6');
       body.innerHTML = `
