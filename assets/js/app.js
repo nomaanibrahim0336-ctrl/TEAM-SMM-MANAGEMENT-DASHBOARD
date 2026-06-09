@@ -557,6 +557,12 @@ function pageInit(options = {}) {
     syncFromAPI().then(() => {
       document.dispatchEvent(new CustomEvent('smm:synced'));
     });
+    // Auto-refresh every 30 seconds so team sees each other's changes
+    setInterval(() => {
+      syncFromAPI().then(() => {
+        document.dispatchEvent(new CustomEvent('smm:synced'));
+      });
+    }, 30000);
   } else if (!localStorage.getItem('smm_clients')) {
     // first ever load — seed sample data
     getSampleClients(); getSampleTasks(); getSampleTeam();
