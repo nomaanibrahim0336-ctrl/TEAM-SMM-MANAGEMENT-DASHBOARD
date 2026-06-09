@@ -108,9 +108,11 @@
           </div>
           <div>
             <label class="form-label">Assigned Designer</label>
-            <select id="clientDesigner" class="form-input">
+            <select id="clientDesigner" class="form-input" onchange="onDesignerChange()">
               <option value="">Select Designer</option>
+              <option value="__custom__">+ Custom (type name)</option>
             </select>
+            <input id="clientDesignerCustom" type="text" class="form-input mt-2 hidden" placeholder="Enter designer name"/>
           </div>
         </div>
         <!-- Tenure selector -->
@@ -430,6 +432,13 @@
       document.getElementById('clientEnd').value = d.toISOString().split('T')[0];
     }
 
+    function onDesignerChange() {
+      const sel = document.getElementById('clientDesigner');
+      const custom = document.getElementById('clientDesignerCustom');
+      if (sel.value === '__custom__') custom.classList.remove('hidden');
+      else { custom.classList.add('hidden'); custom.value = ''; }
+    }
+
     function populateRoleDropdown(selectId, roles, selectedValue) {
       const sel = document.getElementById(selectId);
       const firstOpt = sel.options[0];
@@ -459,7 +468,17 @@
       });
       populateRoleDropdown('clientPM',        ['admin','project_manager'], client?.pm || '');
       populateRoleDropdown('clientExecutive',  ['creator'],                 client?.executive || '');
-      populateRoleDropdown('clientDesigner',   ['designer'],                client?.designer || '');
+      populateRoleDropdown('clientDesigner',   ['designer'],                client?.designer || (client ? '' : 'Faaiz'));
+      // Re-add custom option (overwritten by populateRoleDropdown's innerHTML reset)
+      document.getElementById('clientDesigner').insertAdjacentHTML('beforeend', '<option value="__custom__">+ Custom (type name)</option>');
+      const designerCustomInput = document.getElementById('clientDesignerCustom');
+      designerCustomInput.classList.add('hidden');
+      designerCustomInput.value = '';
+      if (client?.designer && ![...document.getElementById('clientDesigner').options].some(o => o.value === client.designer)) {
+        document.getElementById('clientDesigner').value = '__custom__';
+        designerCustomInput.classList.remove('hidden');
+        designerCustomInput.value = client.designer;
+      }
       // Set tenure pills
       const tenure = client?.tenure || 3;
       const presets = [1, 2, 3, 6, 12];
@@ -491,7 +510,9 @@
         name: document.getElementById('clientName').value.trim(),
         pm: document.getElementById('clientPM').value,
         executive: document.getElementById('clientExecutive').value,
-        designer: document.getElementById('clientDesigner').value,
+        designer: document.getElementById('clientDesigner').value === '__custom__'
+          ? document.getElementById('clientDesignerCustom').value.trim()
+          : document.getElementById('clientDesigner').value,
         startDate: document.getElementById('clientStart').value,
         endDate: document.getElementById('clientEnd').value,
         budget: parseInt(document.getElementById('clientBudget').value) || 0,

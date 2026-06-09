@@ -146,13 +146,25 @@
           </div>
         </div>
         <div>
-          <label class="form-label">Role *</label>
-          <select id="memberRole" class="form-input">
-            <option value="admin">Admin</option>
-            <option value="project_manager">Team Lead</option>
-            <option value="creator">Executive</option>
-            <option value="designer">Designer</option>
-          </select>
+          <label class="form-label">Roles * <span class="text-gray-600 font-normal">(select all that apply)</span></label>
+          <div class="grid grid-cols-2 gap-2">
+            <label class="flex items-center gap-2 bg-gray-800/60 border border-gray-700 rounded-lg px-3 py-2 cursor-pointer hover:border-gray-600">
+              <input type="checkbox" class="member-role-check" value="admin"> <span class="text-sm text-gray-200">Admin</span>
+            </label>
+            <label class="flex items-center gap-2 bg-gray-800/60 border border-gray-700 rounded-lg px-3 py-2 cursor-pointer hover:border-gray-600">
+              <input type="checkbox" class="member-role-check" value="project_manager"> <span class="text-sm text-gray-200">Team Lead</span>
+            </label>
+            <label class="flex items-center gap-2 bg-gray-800/60 border border-gray-700 rounded-lg px-3 py-2 cursor-pointer hover:border-gray-600">
+              <input type="checkbox" class="member-role-check" value="creator"> <span class="text-sm text-gray-200">Executive</span>
+            </label>
+            <label class="flex items-center gap-2 bg-gray-800/60 border border-gray-700 rounded-lg px-3 py-2 cursor-pointer hover:border-gray-600">
+              <input type="checkbox" class="member-role-check" value="designer"> <span class="text-sm text-gray-200">Designer</span>
+            </label>
+            <label class="flex items-center gap-2 bg-gray-800/60 border border-gray-700 rounded-lg px-3 py-2 cursor-pointer hover:border-gray-600 col-span-2">
+              <input type="checkbox" class="member-role-check" value="client_manager"> <span class="text-sm text-gray-200">Client Management</span>
+            </label>
+          </div>
+          <p class="text-xs text-gray-600 mt-1">First selected role is used as the primary role.</p>
         </div>
         <div>
           <label class="form-label" id="passwordLabel">Password *</label>
@@ -222,6 +234,7 @@
       creator:         { label:'Executive',        color:'bg-blue-500/15 text-blue-400 border-blue-500/30',        avatarBg:'bg-blue-700',    icon:'fa-pen-nib' },
       designer:        { label:'Designer',        color:'bg-pink-500/15 text-pink-400 border-pink-500/30',        avatarBg:'bg-pink-700',    icon:'fa-palette' },
       project_manager: { label:'Team Lead', color:'bg-green-500/15 text-green-400 border-green-500/30',     avatarBg:'bg-green-700',   icon:'fa-user-tie' },
+      client_manager:  { label:'Client Management', color:'bg-yellow-500/15 text-yellow-400 border-yellow-500/30', avatarBg:'bg-yellow-700', icon:'fa-briefcase' },
     };
 
     function renderAdmin() {
@@ -258,7 +271,14 @@
               </div>
             </td>
             <td class="text-gray-400">${u.email}</td>
-            <td><span class="status-badge ${cfg.color}">${cfg.label}</span></td>
+            <td>
+              <div class="flex flex-wrap gap-1">
+                ${(u.roles && u.roles.length ? u.roles : [u.role]).map(r => {
+                  const rc = ROLE_CONFIG[r] || ROLE_CONFIG.creator;
+                  return `<span class="status-badge ${rc.color}">${rc.label}</span>`;
+                }).join('')}
+              </div>
+            </td>
             <td><span class="font-semibold ${activeTasks > 5 ? 'text-orange-400' : 'text-white'}">${activeTasks}</span></td>
             <td>
               <button onclick="openPwModal('${u.id}')" class="flex items-center gap-1.5 text-xs text-gray-500 hover:text-indigo-400 transition-colors bg-gray-800 hover:bg-gray-700 px-3 py-1.5 rounded-lg">
@@ -284,7 +304,7 @@
       document.getElementById('saveMemberBtn').textContent = 'Add Member';
       document.getElementById('memberName').value = '';
       document.getElementById('memberEmail').value = '';
-      document.getElementById('memberRole').value = 'creator';
+      document.querySelectorAll('.member-role-check').forEach(cb => cb.checked = (cb.value === 'creator'));
       document.getElementById('memberPassword').value = '';
       document.getElementById('memberPasswordConfirm').value = '';
       document.getElementById('passwordHint').classList.add('hidden');
@@ -300,7 +320,8 @@
       document.getElementById('saveMemberBtn').textContent = 'Save Changes';
       document.getElementById('memberName').value = u.name;
       document.getElementById('memberEmail').value = u.email;
-      document.getElementById('memberRole').value = u.role;
+      const memberRoles = (u.roles && u.roles.length) ? u.roles : [u.role];
+      document.querySelectorAll('.member-role-check').forEach(cb => cb.checked = memberRoles.includes(cb.value));
       document.getElementById('memberPassword').value = '';
       document.getElementById('memberPasswordConfirm').value = '';
       document.getElementById('passwordHint').classList.remove('hidden');
@@ -313,10 +334,12 @@
       const id   = document.getElementById('memberId').value;
       const name = document.getElementById('memberName').value.trim();
       const email = document.getElementById('memberEmail').value.trim();
-      const role = document.getElementById('memberRole').value;
+      const roles = [...document.querySelectorAll('.member-role-check:checked')].map(cb => cb.value);
+      const role  = roles[0] || 'creator';
       const pw   = document.getElementById('memberPassword').value;
       const cpw  = document.getElementById('memberPasswordConfirm').value;
       if (!name) { alert('Name is required.'); return; }
+      if (!roles.length) { alert('Select at least one role.'); return; }
       if (pw && pw !== cpw) { alert('Passwords do not match.'); return; }
 
       // Hide any previous error
@@ -326,11 +349,15 @@
         // API-first: let Railway create/update, then sync
         try {
           if (id) {
-            await apiFetch(`/team/${id}`, { method: 'PUT', body: { name, email, role, avatar: name[0].toUpperCase(), password: pw || undefined } });
+            await apiFetch(`/team/${id}`, { method: 'PUT', body: { name, email, role, roles, avatar: name[0].toUpperCase(), password: pw || undefined } });
           } else {
-            await apiFetch('/team', { method: 'POST', body: { name, email, role, avatar: name[0].toUpperCase(), password: pw || 'changeme123' } });
+            await apiFetch('/team', { method: 'POST', body: { name, email, role, roles, avatar: name[0].toUpperCase(), password: pw || 'changeme123' } });
           }
           await syncFromAPI();
+          // Persist roles array locally too (in case backend doesn't store extra field)
+          const allTeam = APP.team;
+          const idx2 = allTeam.findIndex(m => m.name === name && m.email === email);
+          if (idx2 !== -1) { allTeam[idx2].roles = roles; APP.team = allTeam; saveData(); }
           document.dispatchEvent(new CustomEvent('smm:synced'));
           renderAdmin(); closeMemberModal();
           showToast(id ? 'Member updated.' : 'Member added successfully!');
@@ -346,16 +373,18 @@
       }
 
       // localStorage fallback
+      const allTeam = APP.team;
       if (id) {
-        const idx = APP.team.findIndex(u => u.id === id);
+        const idx = allTeam.findIndex(u => u.id === id);
         if (idx !== -1) {
-          APP.team[idx].name = name; APP.team[idx].email = email;
-          APP.team[idx].role = role; APP.team[idx].avatar = name[0].toUpperCase();
-          if (pw) APP.team[idx].password = pw;
+          allTeam[idx].name = name; allTeam[idx].email = email;
+          allTeam[idx].role = role; allTeam[idx].roles = roles; allTeam[idx].avatar = name[0].toUpperCase();
+          if (pw) allTeam[idx].password = pw;
         }
       } else {
-        APP.team.push({ id: 'u' + Date.now(), name, email, role, password: pw || '', avatar: name[0].toUpperCase(), color: 'bg-gray-700' });
+        allTeam.push({ id: 'u' + Date.now(), name, email, role, roles, password: pw || '', avatar: name[0].toUpperCase(), color: 'bg-gray-700' });
       }
+      APP.team = allTeam;
       saveData(); renderAdmin(); closeMemberModal();
     }
 
@@ -407,8 +436,10 @@
       if (!pw) { showToast('Enter a new password.'); return; }
       if (pw !== cpw) { document.getElementById('pwError').classList.remove('hidden'); return; }
       document.getElementById('pwError').classList.add('hidden');
-      const idx = APP.team.findIndex(u => u.id === id);
-      if (idx !== -1) APP.team[idx].password = pw;
+      const allTeamPw = APP.team;
+      const idx = allTeamPw.findIndex(u => u.id === id);
+      if (idx !== -1) allTeamPw[idx].password = pw;
+      APP.team = allTeamPw;
       saveData(); if(APP.useAPI) apiFetch(`/team/${id}/password`,{method:'PUT',body:{password:pw}});
       // Show success state inside modal
       const body = document.querySelector('#pwModal .p-6');
