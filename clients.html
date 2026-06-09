@@ -42,6 +42,28 @@
 
     <main class="flex-1 px-8 py-6 space-y-6">
 
+      <!-- INTAKE STAGING AREA (hidden when empty) -->
+      <div id="intakeStagingWrap" class="hidden">
+        <div class="bg-gray-900 border border-yellow-500/30 rounded-xl overflow-hidden">
+          <div class="flex items-center justify-between px-5 py-4 border-b border-yellow-500/20 bg-yellow-500/5">
+            <div class="flex items-center gap-3">
+              <div class="w-7 h-7 rounded-lg bg-yellow-500/20 flex items-center justify-center">
+                <i class="fa-solid fa-inbox text-yellow-400 text-xs"></i>
+              </div>
+              <div>
+                <h2 class="text-sm font-semibold text-white">Intake Queue</h2>
+                <p class="text-xs text-gray-500">Pulled from SMM-INTAKE sheet — review and activate to go live</p>
+              </div>
+              <span id="intakeCount" class="text-xs bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 px-2 py-0.5 rounded-full font-medium">0 pending</span>
+            </div>
+            <button onclick="clearIntake()" class="text-xs text-gray-500 hover:text-red-400 transition-colors">
+              <i class="fa-solid fa-trash mr-1"></i>Clear all
+            </button>
+          </div>
+          <div id="intakeList" class="divide-y divide-gray-800"></div>
+        </div>
+      </div>
+
       <!-- OVERALL STATS -->
       <div class="grid grid-cols-4 gap-4" id="clientStats"></div>
 
@@ -450,6 +472,13 @@
         APP.clients.push(data);
       }
       saveData(); apiSaveClient(data); renderClients(); renderStats(); closeClientModal();
+      // Remove from intake queue if this client was activated from there
+      if (window._activatingIntakeId) {
+        const q = getIntakeQueue().filter(c => c.id !== window._activatingIntakeId);
+        setIntakeQueue(q);
+        window._activatingIntakeId = null;
+        renderIntake();
+      }
     }
 
     function editClient(id) {
@@ -641,8 +670,9 @@
       }
       renderStats();
       renderClients();
-      if (APP.useAPI) syncFromAPI().then(() => { renderStats(); renderClients(); });
-      document.addEventListener('smm:synced', () => { renderStats(); renderClients(); });
+      renderIntake();
+      if (APP.useAPI) syncFromAPI().then(() => { renderStats(); renderClients(); renderIntake(); });
+      document.addEventListener('smm:synced', () => { renderStats(); renderClients(); renderIntake(); });
     });
 
     const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbwjS5oMNCC3fC27V6t6-gXDAzPkkHHOTBEsXYBUrWE7YkqGZoLnfweoh6OFhEs52cOf/exec';
@@ -681,16 +711,80 @@
       btn.innerHTML = '<i class="fa-brands fa-google mr-2 text-xs"></i>Export to Sheets';
     }
 
+    // ── INTAKE QUEUE ─────────────────────────────────────────
+    function getIntakeQueue() { return JSON.parse(localStorage.getItem('smm_intake') || '[]'); }
+    function setIntakeQueue(q) { localStorage.setItem('smm_intake', JSON.stringify(q)); }
+
+    function renderIntake() {
+      const queue = getIntakeQueue();
+      const wrap  = document.getElementById('intakeStagingWrap');
+      const list  = document.getElementById('intakeList');
+      const count = document.getElementById('intakeCount');
+      if (!queue.length) { wrap.classList.add('hidden'); return; }
+      wrap.classList.remove('hidden');
+      count.textContent = queue.length + ' pending';
+      list.innerHTML = queue.map(c => `
+        <div class="flex items-center justify-between px-5 py-3 hover:bg-gray-800/40 transition-colors" id="intake_${c.id}">
+          <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-full bg-yellow-500/20 flex items-center justify-center text-yellow-400 font-bold text-sm">
+              ${c.name[0].toUpperCase()}
+            </div>
+            <div>
+              <p class="text-sm font-semibold text-white">${c.name}</p>
+              <p class="text-xs text-gray-500">Pulled from intake sheet — needs details</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-2">
+            <button onclick="activateIntakeClient('${c.id}')"
+              class="flex items-center gap-1.5 bg-green-600 hover:bg-green-500 text-white text-xs font-medium px-3 py-1.5 rounded-lg transition-colors">
+              <i class="fa-solid fa-circle-check text-xs"></i> Activate & Fill Details
+            </button>
+            <button onclick="dismissIntakeClient('${c.id}')"
+              class="text-gray-600 hover:text-red-400 transition-colors px-2 py-1.5" title="Dismiss">
+              <i class="fa-solid fa-xmark"></i>
+            </button>
+          </div>
+        </div>`).join('');
+    }
+
+    function activateIntakeClient(id) {
+      const queue = getIntakeQueue();
+      const client = queue.find(c => c.id === id);
+      if (!client) return;
+      // Open client modal pre-filled with name
+      openClientModal();
+      setTimeout(() => {
+        const nameField = document.getElementById('clientName');
+        if (nameField) nameField.value = client.name;
+      }, 50);
+      // Remove from intake queue after modal opens
+      window._activatingIntakeId = id;
+    }
+
+    function dismissIntakeClient(id) {
+      const queue = getIntakeQueue().filter(c => c.id !== id);
+      setIntakeQueue(queue);
+      renderIntake();
+    }
+
+    function clearIntake() {
+      if (!confirm('Clear all pending intake clients?')) return;
+      setIntakeQueue([]);
+      renderIntake();
+    }
+
+    // Hook into closeClientModal to clean up intake if client was saved
+    const _origCloseClientModal = window.closeClientModal;
+
     function pullFromSheets(btn) {
       btn.disabled = true;
       btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2 text-xs"></i>Pulling…';
 
-      // JSONP: Apps Script wraps response in a callback fn so no CORS issue
       const cbName = '_sheetsCB_' + Date.now();
       const timeout = setTimeout(() => {
         cleanup();
         btn.disabled = false;
-        btn.innerHTML = '<i class="fa-solid fa-cloud-arrow-down mr-2 text-xs"></i>Pull from Sheets';
+        btn.innerHTML = '<i class="fa-solid fa-cloud-arrow-down mr-2 text-xs"></i>Pull from Intake';
         showToast('Pull timed out — check your Apps Script is deployed correctly', 'error');
       }, 15000);
 
@@ -704,50 +798,31 @@
       window[cbName] = function(data) {
         cleanup();
         btn.disabled = false;
-        btn.innerHTML = '<i class="fa-solid fa-cloud-arrow-down mr-2 text-xs"></i>Pull from Sheets';
+        btn.innerHTML = '<i class="fa-solid fa-cloud-arrow-down mr-2 text-xs"></i>Pull from Intake';
 
         if (!data || !data.rows || !data.rows.length) {
-          showToast('No client data found in "Clients" sheet tab', 'error'); return;
+          showToast('No names found in intake sheet', 'error'); return;
         }
 
-        // Only need Name — rest filled in dashboard
-        const pulled = data.rows.map((r, i) => ({
-          id:     'sc_' + Date.now() + '_' + i,
-          name:   (r.Name || r.name || Object.values(r)[0] || '').trim(),
-          status: 'active'
+        // Only pull names — go to staging queue
+        const names = data.rows.map((r, i) => ({
+          id:   'intake_' + Date.now() + '_' + i,
+          name: (r.Name || r.name || Object.values(r)[0] || '').trim()
         })).filter(c => c.name);
 
-        if (!pulled.length) { showToast('No valid rows found in sheet', 'error'); return; }
+        if (!names.length) { showToast('No valid names found in sheet', 'error'); return; }
 
-        // Merge: keep existing clients by name, add new ones from sheet
-        const existing = APP.clients;
-        const merged = [...existing];
-        let added = 0, updated = 0;
-        pulled.forEach(sc => {
-          const idx = merged.findIndex(c => c.name.toLowerCase() === sc.name.toLowerCase());
-          if (idx >= 0) {
-            // Update existing — preserve id
-            merged[idx] = { ...merged[idx], ...sc, id: merged[idx].id };
-            updated++;
-          } else {
-            merged.push(sc);
-            added++;
-          }
-        });
+        // Skip names already in dashboard or already in queue
+        const existing = APP.clients.map(c => c.name.toLowerCase());
+        const queue    = getIntakeQueue();
+        const inQueue  = queue.map(c => c.name.toLowerCase());
+        const newOnes  = names.filter(n => !existing.includes(n.name.toLowerCase()) && !inQueue.includes(n.name.toLowerCase()));
 
-        APP.clients = merged;
+        if (!newOnes.length) { showToast('All names already in dashboard or queue', 'info'); return; }
 
-        // Save to Railway if connected
-        if (APP.useAPI) {
-          Promise.all(pulled.map(c => {
-            const existing = APP.clients.find(e => e.name.toLowerCase() === c.name.toLowerCase());
-            return apiSaveClient(existing || c);
-          })).then(() => syncFromAPI()).then(() => { renderStats(); renderClients(); });
-        } else {
-          saveData(); renderStats(); renderClients();
-        }
-
-        showToast(`Sheet pulled: ${added} added, ${updated} updated ✓`);
+        setIntakeQueue([...queue, ...newOnes]);
+        renderIntake();
+        showToast(`${newOnes.length} client${newOnes.length > 1 ? 's' : ''} added to Intake Queue ✓`);
       };
 
       const script = document.createElement('script');
