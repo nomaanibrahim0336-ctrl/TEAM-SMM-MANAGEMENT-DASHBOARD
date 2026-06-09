@@ -192,13 +192,15 @@
       e.preventDefault();
       document.querySelectorAll('.kanban-col').forEach(c => c.classList.remove('drag-over'));
       if (!draggedId) return;
-      const task = APP.tasks.find(t => t.id === draggedId);
+      const allTasks = APP.tasks;
+      const task = allTasks.find(t => t.id === draggedId);
       if (task && task.status !== newStatus) {
         task.status = newStatus;
         task.timeline = task.timeline || [];
         const dropLabel = `Moved to ${COLUMNS.find(c=>c.id===newStatus)?.label}`;
         task.timeline.push({ action: dropLabel, by: 'You', date: new Date().toISOString().split('T')[0] });
-        saveData(); apiUpdateTask(task.id, { status: newStatus, timeline_action: dropLabel });
+        APP.tasks = allTasks;
+        apiUpdateTask(task.id, { status: newStatus, timeline_action: dropLabel });
         renderBoard();
       }
       draggedId = null;
@@ -332,7 +334,8 @@
     }
 
     function saveTaskEdits(taskId) {
-      const task = APP.tasks.find(t => t.id === taskId);
+      const allTasks = APP.tasks;
+      const task = allTasks.find(t => t.id === taskId);
       if (!task) return;
       const assignedTo = document.getElementById('editAssignedTo').value;
       const designer   = document.getElementById('editDesigner').value;
@@ -346,27 +349,32 @@
       task.brief      = brief;
       task.timeline   = task.timeline || [];
       task.timeline.push({ action: 'Task details updated', by: APP.currentUser?.name || 'You', date: new Date().toISOString().split('T')[0] });
-      saveData();
+      APP.tasks = allTasks;
       apiUpdateTask(taskId, { assigned_to: assignedTo, designer, priority, due_date: dueDate, timeline_action: 'Task details updated' });
       showToast('Task updated!');
       renderBoard();
-      viewTask(taskId); // refresh modal
+      viewTask(taskId);
     }
 
     function moveTask(taskId, newStatus) {
-      const task = APP.tasks.find(t => t.id === taskId);
+      const allTasks = APP.tasks;
+      const task = allTasks.find(t => t.id === taskId);
       if (!task) return;
 
       if (newStatus === 'posted') {
         showPostedDateModal(taskId, (date, scheduledTill, note) => {
-          task.status = 'posted';
-          task.postedDate = date;
-          task.scheduledTill = scheduledTill;
-          task.postedNote = note;
-          task.timeline = task.timeline || [];
+          const allTasks2 = APP.tasks;
+          const task2 = allTasks2.find(t => t.id === taskId);
+          if (!task2) return;
+          task2.status = 'posted';
+          task2.postedDate = date;
+          task2.scheduledTill = scheduledTill;
+          task2.postedNote = note;
+          task2.timeline = task2.timeline || [];
           const label = `Posted on ${formatDate(date)}` + (scheduledTill ? ` — Scheduled till: ${formatDate(scheduledTill)}` : '');
-          task.timeline.push({ action: label + (note ? ` — ${note}` : ''), by: 'You', date });
-          saveData(); apiUpdateTask(task.id, { status:'posted', posted_date: date, scheduled_till: scheduledTill, timeline_action: label + (note ? ` — ${note}` : '') });
+          task2.timeline.push({ action: label + (note ? ` — ${note}` : ''), by: APP.currentUser?.name || 'You', date });
+          APP.tasks = allTasks2;
+          apiUpdateTask(taskId, { status:'posted', posted_date: date, scheduled_till: scheduledTill, timeline_action: label + (note ? ` — ${note}` : '') });
           renderBoard(); closeTaskDetail();
           showToast('Task marked as Posted!');
         });
@@ -374,15 +382,22 @@
       }
 
       if (newStatus === 'changes_requested') {
-        showChangesModal(taskId, () => { saveData(); renderBoard(); closeTaskDetail(); });
+        showChangesModal(taskId, () => {
+          const allTasks3 = APP.tasks;
+          const t3 = allTasks3.find(t => t.id === taskId);
+          if (t3) { t3.status = 'changes_requested'; APP.tasks = allTasks3; }
+          renderBoard(); closeTaskDetail();
+        });
         return;
       }
 
       task.status = newStatus;
       task.timeline = task.timeline || [];
       const moveLabel2 = `Moved to ${COLUMNS.find(c=>c.id===newStatus)?.label}`;
-      task.timeline.push({ action: moveLabel2, by: 'You', date: new Date().toISOString().split('T')[0] });
-      saveData(); apiUpdateTask(task.id, { status: newStatus, timeline_action: moveLabel2 }); renderBoard(); closeTaskDetail();
+      task.timeline.push({ action: moveLabel2, by: APP.currentUser?.name || 'You', date: new Date().toISOString().split('T')[0] });
+      APP.tasks = allTasks;
+      apiUpdateTask(taskId, { status: newStatus, timeline_action: moveLabel2 });
+      renderBoard(); closeTaskDetail();
     }
 
     function showChangesModal(taskId, onDone) {
@@ -416,7 +431,8 @@
     function confirmChanges(taskId) {
       const note = document.getElementById('changesNote').value.trim();
       if (!note) { showToast('Please describe what needs to change.', 'error'); return; }
-      const task = APP.tasks.find(t => t.id === taskId);
+      const allTasks = APP.tasks;
+      const task = allTasks.find(t => t.id === taskId);
       if (!task) return;
       const today = new Date().toISOString().split('T')[0];
       const user = APP.currentUser;
@@ -425,7 +441,8 @@
       task.comments.push({ by: user ? user.name : 'You', text: note, date: today, type: 'change_request' });
       task.timeline = task.timeline || [];
       task.timeline.push({ action: `Changes requested: "${note}"`, by: user ? user.name : 'You', date: today });
-      apiUpdateTask(task.id, { status:'changes_requested', changes_requested: true, change_note: note, timeline_action: `Changes requested: "${note}"` });
+      APP.tasks = allTasks;
+      apiUpdateTask(taskId, { status:'changes_requested', changes_requested: true, change_note: note, timeline_action: `Changes requested: "${note}"` });
       document.getElementById('changesModal').remove();
       if (window._changesCallback) window._changesCallback();
       showToast('Changes requested and logged.');
@@ -435,11 +452,13 @@
       const input = document.getElementById('newComment');
       const text = input.value.trim();
       if (!text) return;
-      const task = APP.tasks.find(t => t.id === taskId);
+      const allTasks = APP.tasks;
+      const task = allTasks.find(t => t.id === taskId);
       if (!task) return;
       task.comments = task.comments || [];
-      task.comments.push({ by: 'You', text, date: new Date().toISOString().split('T')[0] });
-      saveData(); input.value = '';
+      task.comments.push({ by: APP.currentUser?.name || 'You', text, date: new Date().toISOString().split('T')[0] });
+      APP.tasks = allTasks;
+      input.value = '';
       viewTask(taskId);
     }
 
