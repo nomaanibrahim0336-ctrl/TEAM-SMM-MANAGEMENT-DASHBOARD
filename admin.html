@@ -132,6 +132,9 @@
       </div>
       <div class="p-6 space-y-4">
         <input type="hidden" id="memberId"/>
+        <div id="memberModalError" class="hidden bg-red-500/10 border border-red-500/30 text-red-400 text-sm px-4 py-3 rounded-lg">
+          <i class="fa-solid fa-circle-exclamation mr-2"></i><span id="memberModalErrorText">Something went wrong.</span>
+        </div>
         <div class="grid grid-cols-2 gap-4">
           <div>
             <label class="form-label">Full Name *</label>
@@ -285,6 +288,7 @@
       document.getElementById('memberPassword').value = '';
       document.getElementById('memberPasswordConfirm').value = '';
       document.getElementById('passwordHint').classList.add('hidden');
+      document.getElementById('memberModalError').classList.add('hidden');
       document.getElementById('memberModal').classList.add('open');
     }
 
@@ -315,6 +319,9 @@
       if (!name) { alert('Name is required.'); return; }
       if (pw && pw !== cpw) { alert('Passwords do not match.'); return; }
 
+      // Hide any previous error
+      document.getElementById('memberModalError').classList.add('hidden');
+
       if (APP.useAPI) {
         // API-first: let Railway create/update, then sync
         try {
@@ -326,9 +333,14 @@
           await syncFromAPI();
           document.dispatchEvent(new CustomEvent('smm:synced'));
           renderAdmin(); closeMemberModal();
-          showToast(id ? 'Member updated.' : 'Member added.');
+          showToast(id ? 'Member updated.' : 'Member added successfully!');
         } catch(e) {
-          showToast('Error: ' + e.message, 'error');
+          // Show error inside the modal
+          const msg = e.message.includes('already exists') || e.message.includes('409')
+            ? 'This email is already used by another member. Please use a different email.'
+            : 'Could not save member — ' + e.message;
+          document.getElementById('memberModalErrorText').textContent = msg;
+          document.getElementById('memberModalError').classList.remove('hidden');
         }
         return;
       }
