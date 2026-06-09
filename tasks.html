@@ -511,11 +511,25 @@
       btn.disabled = true;
       btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2 text-xs"></i>Exporting…';
       try {
+        const rows = APP.tasks.map(t => ({
+          Client:      t.clientName  || '',
+          Title:       t.title || t.topic || '',
+          Platform:    t.platform    || '',
+          Type:        t.contentType || '',
+          Status:      t.status      || '',
+          Priority:    t.priority    || '',
+          Executive:   t.assignedTo  || '',
+          Designer:    t.designer    || '',
+          CreatedBy:   t.createdBy   || '',
+          DueDate:     t.dueDate     || '',
+          PostedDate:  t.postedDate  || '',
+          ScheduledTill: t.scheduledTill || '',
+          Brief:       t.brief       || ''
+        }));
         await fetch(SHEETS_URL, {
           method: 'POST',
           mode: 'no-cors',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ type: 'tasks', rows: APP.tasks })
+          body: JSON.stringify({ sheet: 'Tasks', rows })
         });
         showToast('Tasks exported to Google Sheets ✓');
       } catch(err) {

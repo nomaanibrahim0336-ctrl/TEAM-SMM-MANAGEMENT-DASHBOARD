@@ -649,11 +649,26 @@
       btn.disabled = true;
       btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2 text-xs"></i>Exporting…';
       try {
+        const clients = APP.clients;
+        const rows = clients.map(c => ({
+          Name:      c.name       || '',
+          Platform:  c.platform   || '',
+          Status:    c.status     || '',
+          Package:   c.package    || '',
+          Budget:    c.budget     || 0,
+          StartDate: c.startDate  || '',
+          EndDate:   c.endDate    || '',
+          Tenure:    c.tenure     || '',
+          Executive: c.executive  || '',
+          Designer:  c.designer   || '',
+          Lead:      c.pm         || '',
+          Brief:     c.brief      || ''
+        }));
+        // Use text/plain so no-cors doesn't strip the body
         await fetch(SHEETS_URL, {
           method: 'POST',
           mode: 'no-cors',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ type: 'clients', rows: APP.clients })
+          body: JSON.stringify({ sheet: 'Clients', rows })
         });
         showToast('Clients exported to Google Sheets ✓');
       } catch(err) {
