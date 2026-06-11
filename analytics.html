@@ -43,7 +43,7 @@
 
       // content type breakdown
       const typeCount = {};
-      tasks.forEach(t => { typeCount[t.contentType] = (typeCount[t.contentType] || 0) + 1; });
+      tasks.forEach(t => { const k = t.contentType || 'other'; typeCount[k] = (typeCount[k] || 0) + 1; });
       const maxType = Math.max(...Object.values(typeCount), 1);
 
       // status breakdown
@@ -145,12 +145,12 @@
                   <div>
                     <div class="flex justify-between mb-1">
                       <span class="text-xs text-gray-400 truncate">${c.name}</span>
-                      <span class="text-xs font-semibold text-white">${(c.budget/1000).toFixed(0)}K</span>
+                      <span class="text-xs font-semibold text-white">${((c.budget||0)/1000).toFixed(0)}K</span>
                     </div>
                     <div class="w-full bg-gray-800 rounded-full h-1">
-                      <div class="bg-indigo-400 h-1 rounded-full" style="width:${Math.round((c.budget/totalBudget)*100)}%"></div>
+                      <div class="bg-indigo-400 h-1 rounded-full" style="width:${totalBudget ? Math.round(((c.budget||0)/totalBudget)*100) : 0}%"></div>
                     </div>
-                  </div>`).join('')}
+                  </div>`).join('') || '<p class="text-xs text-gray-600 text-center py-2">No clients yet</p>'}
               </div>
             </div>
           </div>
@@ -163,7 +163,7 @@
             <div class="space-y-3">
               ${Object.entries(statusCount).map(([status, count]) => {
                 const cfg = STATUS_CONFIG[status] || { label: status, color: 'bg-gray-500/15 text-gray-400 border-gray-500/30' };
-                const pct = Math.round((count / total) * 100);
+                const pct = total ? Math.round((count / total) * 100) : 0;
                 return `
                   <div class="flex items-center gap-3">
                     <div class="w-28 flex-shrink-0">${statusBadge(status)}</div>
@@ -172,7 +172,7 @@
                     </div>
                     <span class="text-xs font-semibold text-white w-6 text-right">${count}</span>
                   </div>`;
-              }).join('')}
+              }).join('') || '<p class="text-xs text-gray-600 text-center py-4">No task data yet</p>'}
             </div>
           </div>
 
@@ -206,7 +206,7 @@
           </div>
           <div class="p-5 space-y-4">
             ${(() => {
-              const members = APP.team.filter(m => m.role !== 'admin');
+              const members = APP.team.filter(m => !(m.roles && m.roles.length ? m.roles : [m.role]).includes('admin'));
               return members.map(m => {
                 const assigned = tasks.filter(t => t.assignedTo === m.name || t.designer === m.name || t.createdBy === m.name);
                 const done     = assigned.filter(t => t.status === 'posted').length;
@@ -252,7 +252,7 @@
             <div class="space-y-3">
               ${(() => {
                 const plat = {};
-                tasks.forEach(t => { plat[t.platform] = (plat[t.platform]||0)+1; });
+                tasks.forEach(t => { const k = t.platform || 'other'; plat[k] = (plat[k]||0)+1; });
                 const maxP = Math.max(...Object.values(plat),1);
                 const colors = ['bg-pink-500','bg-blue-500','bg-indigo-500','bg-green-500','bg-yellow-500'];
                 return Object.entries(plat).sort((a,b)=>b[1]-a[1]).map(([p,cnt],i)=>`
@@ -301,7 +301,7 @@
           <table class="data-table">
             <thead><tr><th>Client</th><th>Team Lead</th><th>End Date</th><th>Days Left</th><th>Budget/mo</th><th>Status</th></tr></thead>
             <tbody>
-              ${clients.sort((a,b) => new Date(a.endDate) - new Date(b.endDate)).map(c => {
+              ${[...clients].sort((a,b) => new Date(a.endDate||0) - new Date(b.endDate||0)).map(c => {
                 const days = daysUntil(c.endDate);
                 const dClass = days < 0 ? 'text-red-400 font-bold' : days <= 14 ? 'text-red-400 font-semibold' : days <= 30 ? 'text-orange-400' : 'text-gray-400';
                 const badge = days < 0 ? '<span class="status-badge bg-red-500/15 text-red-400 border-red-500/30">Expired</span>'
@@ -310,12 +310,12 @@
                 return `<tr>
                   <td class="font-medium text-white">${c.name}</td>
                   <td class="text-green-400">${c.pm||'—'}</td>
-                  <td>${formatDate(c.endDate)}</td>
+                  <td>${c.endDate ? formatDate(c.endDate) : '—'}</td>
                   <td><span class="${dClass}">${days < 0 ? Math.abs(days)+'d ago' : days+'d'}</span></td>
                   <td>PKR ${(c.budget||0).toLocaleString()}</td>
                   <td>${badge}</td>
                 </tr>`;
-              }).join('')}
+              }).join('') || '<tr><td colspan="6" class="text-center text-xs text-gray-600 py-4">No clients yet</td></tr>'}
             </tbody>
           </table>
         </div>
@@ -325,7 +325,10 @@
     document.addEventListener('DOMContentLoaded', () => {
       const user = pageInit();
       if (!user) return;
+      document.getElementById('currentDate').textContent = new Date().toLocaleDateString('en-US', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
       render();
+      if (APP.useAPI) syncFromAPI().then(render);
+      document.addEventListener('smm:synced', render);
     });
   </script>
 </body>
