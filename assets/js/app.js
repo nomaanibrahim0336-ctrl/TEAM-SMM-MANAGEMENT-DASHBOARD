@@ -146,6 +146,20 @@ async function apiSaveMember(member) {
     await _afterWrite();
   } catch(e) { console.warn('apiSaveMember:', e.message); }
 }
+// Increment a client's running "post calendar number" — call this whenever
+// a task for that client is marked as Posted.
+function bumpClientPostCount(clientId) {
+  if (!clientId) return;
+  const all = APP.clients;
+  const idx = all.findIndex(c => c.id === clientId);
+  if (idx === -1) return;
+  all[idx].lastPostedNumber = (all[idx].lastPostedNumber || 0) + 1;
+  all[idx].lastPostedDate = new Date().toISOString().split('T')[0];
+  APP.clients = all;
+  saveData();
+  apiSaveClient(all[idx]);
+}
+
 async function apiDeleteMember(id) {
   if (!APP.useAPI) return;
   try { await supaFetch(`/smm_team?id=eq.${id}`, { method: 'DELETE', headers: { Prefer: 'return=minimal' } }); await _afterWrite(); } catch(e) { console.warn(e.message); }

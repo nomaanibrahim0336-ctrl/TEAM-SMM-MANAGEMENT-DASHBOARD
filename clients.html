@@ -314,7 +314,7 @@
           <thead><tr>
             <th>Client</th><th>Team Lead</th><th>Tenure</th>
             <th>Start</th><th>End</th><th>Days Left</th>
-            <th>Budget</th><th>Status</th>
+            <th>Budget</th><th>Status</th><th>Last Posted</th>
             ${canEdit ? '<th></th>' : ''}
           </tr></thead>
           <tbody>
@@ -334,6 +334,7 @@
                 <td>${daysLabel}</td>
                 <td class="font-medium">PKR ${(c.budget||0).toLocaleString()}</td>
                 <td>${statusLabel(s)}</td>
+                <td>${c.lastPostedNumber ? `<span class="status-badge bg-emerald-500/15 text-emerald-400 border-emerald-500/30">#${c.lastPostedNumber}</span>${c.lastPostedDate ? `<div class="text-xs text-gray-500 mt-0.5">${formatDate(c.lastPostedDate)}</div>` : ''}` : '<span class="text-gray-600">—</span>'}</td>
                 ${canEdit ? `<td onclick="event.stopPropagation()"><div class="flex gap-2">
                   <button onclick="editClient('${c.id}')" class="text-gray-500 hover:text-indigo-400 transition-colors p-1"><i class="fa-solid fa-pen text-xs"></i></button>
                   <button onclick="deleteClient('${c.id}')" class="text-gray-500 hover:text-red-400 transition-colors p-1"><i class="fa-solid fa-trash text-xs"></i></button>

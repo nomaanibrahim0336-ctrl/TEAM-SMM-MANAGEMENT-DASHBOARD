@@ -375,6 +375,7 @@
           task2.timeline.push({ action: label + (note ? ` — ${note}` : ''), by: APP.currentUser?.name || 'You', date });
           APP.tasks = allTasks2;
           apiUpdateTask(taskId, { status:'posted', posted_date: date, scheduled_till: scheduledTill, timeline_action: label + (note ? ` — ${note}` : '') });
+          bumpClientPostCount(task2.clientId);
           renderBoard(); closeTaskDetail();
           showToast('Task marked as Posted!');
         });
