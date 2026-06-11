@@ -407,6 +407,7 @@
 
     function renderClients() {
       renderMemberTabs();
+      renderIntake();
     }
 
     function selectTenure(val) {
@@ -819,7 +820,13 @@
       if (!queue.length) { wrap.classList.add('hidden'); return; }
       wrap.classList.remove('hidden');
       count.textContent = queue.length + ' pending';
-      list.innerHTML = queue.map(c => `
+      const search = (document.getElementById('clientSearch')?.value || '').toLowerCase();
+      const filtered = search ? queue.filter(c => c.name.toLowerCase().includes(search)) : queue;
+      if (!filtered.length) {
+        list.innerHTML = `<div class="text-center py-6 text-gray-600 text-sm">No pending clients match "${search}"</div>`;
+        return;
+      }
+      list.innerHTML = filtered.map(c => `
         <div class="flex items-center justify-between px-5 py-3 hover:bg-gray-800/40 transition-colors" id="intake_${c.id}">
           <div class="flex items-center gap-3">
             <div class="w-8 h-8 rounded-full bg-yellow-500/20 flex items-center justify-center text-yellow-400 font-bold text-sm">
