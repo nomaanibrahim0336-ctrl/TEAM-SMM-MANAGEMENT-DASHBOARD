@@ -1,25 +1,29 @@
-// ===== API CONFIG =====
-// Set this to your Railway backend URL (no trailing slash)
-const API_URL = localStorage.getItem('smm_api_url') || '';
+// ===== SUPABASE CONFIG =====
+// Configure via Settings page. When set, data is synced to Supabase Postgres
+// so it persists across devices/sessions instead of being per-browser only.
+const DEFAULT_SUPABASE_URL = 'https://blhjaitkrasnljwsaqda.supabase.co';
+const DEFAULT_SUPABASE_KEY = 'sb_publishable_XQKfkmF0KS2f4WPnQTffMw_M_3zb2-s';
+const SUPABASE_URL = localStorage.getItem('smm_supabase_url') || DEFAULT_SUPABASE_URL;
+const SUPABASE_KEY = localStorage.getItem('smm_supabase_key') || DEFAULT_SUPABASE_KEY;
 
-async function apiFetch(path, options = {}) {
-  const token = localStorage.getItem('smm_token');
-  const res = await fetch(API_URL + path, {
+async function supaFetch(path, options = {}) {
+  const res = await fetch(SUPABASE_URL + '/rest/v1' + path, {
     ...options,
     headers: {
       'Content-Type': 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      apikey: SUPABASE_KEY,
+      Authorization: `Bearer ${SUPABASE_KEY}`,
+      Prefer: 'return=representation',
       ...(options.headers || {})
     },
     body: options.body ? JSON.stringify(options.body) : undefined
   });
-  if (res.status === 401) { logout(); return null; }
-  if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.error || res.statusText); }
-  return res.json();
+  if (!res.ok) { const e = await res.text(); throw new Error(e || res.statusText); }
+  return res.status === 204 ? null : res.json();
 }
 
 // ===== GLOBAL APP STATE =====
-// Reads from localStorage (cache). API calls populate the cache on page load.
+// Reads from localStorage (cache). Supabase sync populates the cache on page load.
 const APP = {
   get currentUser() { return JSON.parse(localStorage.getItem('smm_user')) || null; },
   get clients()     { return JSON.parse(localStorage.getItem('smm_clients')) || []; },
@@ -28,23 +32,23 @@ const APP = {
   set tasks(v)      { localStorage.setItem('smm_tasks', JSON.stringify(v)); },
   get team()        { return JSON.parse(localStorage.getItem('smm_team')) || []; },
   set team(v)       { localStorage.setItem('smm_team', JSON.stringify(v)); },
-  get useAPI()      { return !!API_URL; }
+  get useAPI()      { return !!(SUPABASE_URL && SUPABASE_KEY); }
 };
 
-// Sync all data from API into localStorage cache
+// Sync all data from Supabase into localStorage cache
 async function syncFromAPI() {
   if (!APP.useAPI) return;
   try {
     const [clients, tasks, team] = await Promise.all([
-      apiFetch('/clients'),
-      apiFetch('/tasks'),
-      apiFetch('/team')
+      supaFetch('/smm_clients?select=payload'),
+      supaFetch('/smm_tasks?select=payload'),
+      supaFetch('/smm_team?select=payload')
     ]);
-    if (clients) APP.clients = clients.map(normalizeClient);
-    if (tasks)   APP.tasks   = tasks.map(normalizeTask);
-    if (team)    APP.team    = team.map(normalizeMember);
+    if (clients) APP.clients = clients.map(r => normalizeClient(r.payload));
+    if (tasks)   APP.tasks   = tasks.map(r => normalizeTask(r.payload));
+    if (team)    APP.team    = team.map(r => normalizeMember(r.payload));
   } catch (err) {
-    console.warn('API sync failed, using cache:', err.message);
+    console.warn('Supabase sync failed, using cache:', err.message);
   }
 }
 
@@ -99,54 +103,52 @@ async function _afterWrite() {
 async function apiSaveClient(client) {
   if (!APP.useAPI) return;
   try {
-    await apiFetch('/clients', { method: 'POST', body: {
-      id: client.id, name: client.name, platform: client.platform,
-      status: client.status, package: client.package, budget: client.budget,
-      start_date: client.startDate, end_date: client.endDate, tenure: client.tenure,
-      brief: client.brief, executive: client.executive, designer: client.designer, pm: client.pm
+    await supaFetch('/smm_clients?on_conflict=id', { method: 'POST', headers: { Prefer: 'resolution=merge-duplicates,return=minimal' }, body: {
+      id: client.id, payload: client, updated_at: new Date().toISOString()
     }});
     await _afterWrite();
   } catch(e) { console.warn('apiSaveClient:', e.message); }
 }
 async function apiDeleteClient(id) {
   if (!APP.useAPI) return;
-  try { await apiFetch(`/clients/${id}`, { method: 'DELETE' }); await _afterWrite(); } catch(e) { console.warn(e.message); }
+  try { await supaFetch(`/smm_clients?id=eq.${id}`, { method: 'DELETE', headers: { Prefer: 'return=minimal' } }); await _afterWrite(); } catch(e) { console.warn(e.message); }
 }
 async function apiSaveTask(task) {
   if (!APP.useAPI) return;
   try {
-    await apiFetch('/tasks', { method: 'POST', body: {
-      id: task.id, client_id: task.clientId, client_name: task.clientName,
-      title: task.title || task.topic, platform: task.platform, content_type: task.contentType,
-      status: task.status, priority: task.priority, assigned_to: task.assignedTo,
-      designer: task.designer, created_by: task.createdBy,
-      due_date: task.dueDate, brief: task.brief
+    await supaFetch('/smm_tasks?on_conflict=id', { method: 'POST', headers: { Prefer: 'resolution=merge-duplicates,return=minimal' }, body: {
+      id: task.id, payload: task, updated_at: new Date().toISOString()
     }});
     await _afterWrite();
   } catch(e) { console.warn('apiSaveTask:', e.message); }
 }
 async function apiUpdateTask(id, fields) {
   if (!APP.useAPI) return;
-  try { await apiFetch(`/tasks/${id}`, { method: 'PUT', body: fields }); await _afterWrite(); } catch(e) { console.warn(e.message); }
+  try {
+    const existing = APP.tasks.find(t => String(t.id) === String(id)) || {};
+    const merged = { ...existing, ...fields };
+    await supaFetch('/smm_tasks?on_conflict=id', { method: 'POST', headers: { Prefer: 'resolution=merge-duplicates,return=minimal' }, body: {
+      id, payload: merged, updated_at: new Date().toISOString()
+    }});
+    await _afterWrite();
+  } catch(e) { console.warn(e.message); }
 }
 async function apiDeleteTask(id) {
   if (!APP.useAPI) return;
-  try { await apiFetch(`/tasks/${id}`, { method: 'DELETE' }); await _afterWrite(); } catch(e) { console.warn(e.message); }
+  try { await supaFetch(`/smm_tasks?id=eq.${id}`, { method: 'DELETE', headers: { Prefer: 'return=minimal' } }); await _afterWrite(); } catch(e) { console.warn(e.message); }
 }
 async function apiSaveMember(member) {
   if (!APP.useAPI) return;
   try {
-    if (member.id && !member.id.startsWith('u')) {
-      await apiFetch(`/team/${member.id}`, { method: 'PUT', body: member });
-    } else {
-      await apiFetch('/team', { method: 'POST', body: member });
-    }
+    await supaFetch('/smm_team?on_conflict=id', { method: 'POST', headers: { Prefer: 'resolution=merge-duplicates,return=minimal' }, body: {
+      id: String(member.id), payload: member, updated_at: new Date().toISOString()
+    }});
     await _afterWrite();
   } catch(e) { console.warn('apiSaveMember:', e.message); }
 }
 async function apiDeleteMember(id) {
   if (!APP.useAPI) return;
-  try { await apiFetch(`/team/${id}`, { method: 'DELETE' }); await _afterWrite(); } catch(e) { console.warn(e.message); }
+  try { await supaFetch(`/smm_team?id=eq.${id}`, { method: 'DELETE', headers: { Prefer: 'return=minimal' } }); await _afterWrite(); } catch(e) { console.warn(e.message); }
 }
 
 // ===== SAMPLE DATA =====
@@ -569,7 +571,15 @@ function pageInit(options = {}) {
   // Sync from API in background if configured — caller gets user immediately,
   // pages listen for 'smm:synced' event to re-render with fresh data
   if (APP.useAPI) {
-    syncFromAPI().then(() => {
+    syncFromAPI().then(async () => {
+      if (!APP.clients.length && !APP.tasks.length && !APP.team.length && !localStorage.getItem('smm_seeded')) {
+        localStorage.setItem('smm_seeded', '1');
+        const clients = getSampleClients(), tasks = getSampleTasks(), team = getSampleTeam();
+        for (const c of clients) await apiSaveClient(c);
+        for (const t of tasks) await apiSaveTask(t);
+        for (const m of team) await apiSaveMember(m);
+        await syncFromAPI();
+      }
       document.dispatchEvent(new CustomEvent('smm:synced'));
     });
     // Auto-refresh every 30 seconds so team sees each other's changes

@@ -62,20 +62,24 @@
           <div class="px-6 py-4 border-b border-gray-800 flex items-center gap-3">
             <div>
               <h2 class="text-sm font-semibold text-white">Backend Connection</h2>
-              <p class="text-xs text-gray-500 mt-0.5">Connect to your Railway API server for shared, real-time data</p>
+              <p class="text-xs text-gray-500 mt-0.5">Connect to Supabase for shared, real-time data across all devices</p>
             </div>
             <span id="apiStatusBadge" class="ml-auto text-xs px-2.5 py-1 rounded-full font-medium bg-gray-800 text-gray-400">Not connected</span>
           </div>
           <div class="p-6 space-y-4">
             <div>
-              <label class="form-label">Railway API URL</label>
+              <label class="form-label">Supabase Project URL</label>
+              <input id="supabaseUrlInput" type="url" class="form-input" placeholder="https://xxxxx.supabase.co"/>
+            </div>
+            <div>
+              <label class="form-label">Supabase Anon/Publishable Key</label>
               <div class="flex gap-2">
-                <input id="apiUrlInput" type="url" class="form-input flex-1" placeholder="https://your-app.up.railway.app"/>
+                <input id="supabaseKeyInput" type="text" class="form-input flex-1" placeholder="eyJhbGciOi..."/>
                 <button onclick="testAPIConnection()" class="btn-secondary px-4 whitespace-nowrap">
                   <i class="fa-solid fa-satellite-dish mr-1.5"></i>Test
                 </button>
               </div>
-              <p class="text-xs text-gray-600 mt-1.5">Paste the URL from your Railway project dashboard (no trailing slash)</p>
+              <p class="text-xs text-gray-600 mt-1.5">Found in your Supabase project under Settings → API</p>
             </div>
             <div id="apiTestResult" class="hidden rounded-lg px-4 py-3 text-sm"></div>
             <div class="flex gap-3">
@@ -283,13 +287,16 @@
       localStorage.setItem('smm_alert_prefs', JSON.stringify(prefs));
     }
 
-    // ===== Backend Connection =====
+    // ===== Backend Connection (Supabase) =====
     function updateAPIStatusBadgeLocal() {
-      const url = localStorage.getItem('smm_api_url') || '';
+      const url = localStorage.getItem('smm_supabase_url') || '';
+      const key = localStorage.getItem('smm_supabase_key') || '';
       const badge = document.getElementById('apiStatusBadge');
-      const input = document.getElementById('apiUrlInput');
-      if (input && !input.value) input.value = url;
-      if (url) {
+      const urlInput = document.getElementById('supabaseUrlInput');
+      const keyInput = document.getElementById('supabaseKeyInput');
+      if (urlInput && !urlInput.value) urlInput.value = url;
+      if (keyInput && !keyInput.value) keyInput.value = key;
+      if (url && key) {
         badge.className = 'ml-auto text-xs px-2.5 py-1 rounded-full font-medium bg-green-500/15 text-green-400';
         badge.innerHTML = '<i class="fa-solid fa-circle text-green-400 text-[8px] mr-1 animate-pulse"></i>Connected';
       } else {
@@ -299,20 +306,23 @@
     }
 
     async function testAPIConnection() {
-      const url = document.getElementById('apiUrlInput').value.trim().replace(/\/$/, '');
+      const url = document.getElementById('supabaseUrlInput').value.trim().replace(/\/$/, '');
+      const key = document.getElementById('supabaseKeyInput').value.trim();
       const result = document.getElementById('apiTestResult');
-      if (!url) { showToast('Enter a URL first'); return; }
+      if (!url || !key) { showToast('Enter the Supabase URL and key first'); return; }
       result.className = 'rounded-lg px-4 py-3 text-sm bg-gray-800 text-gray-400';
       result.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i>Testing connection…';
       result.classList.remove('hidden');
       try {
-        const res = await fetch(url + '/health', { signal: AbortSignal.timeout(8000) });
-        const data = await res.json();
+        const res = await fetch(url + '/rest/v1/smm_clients?select=id&limit=1', {
+          headers: { apikey: key, Authorization: `Bearer ${key}` },
+          signal: AbortSignal.timeout(8000)
+        });
         if (res.ok) {
           result.className = 'rounded-lg px-4 py-3 text-sm bg-green-500/10 text-green-400 border border-green-500/20';
-          result.innerHTML = `<i class="fa-solid fa-circle-check mr-2"></i>Connected — server is online (${data.timestamp ? new Date(data.timestamp).toLocaleTimeString() : 'OK'})`;
+          result.innerHTML = '<i class="fa-solid fa-circle-check mr-2"></i>Connected — Supabase is reachable';
         } else {
-          throw new Error('Server responded with error');
+          throw new Error('Server responded with ' + res.status);
         }
       } catch (err) {
         result.className = 'rounded-lg px-4 py-3 text-sm bg-red-500/10 text-red-400 border border-red-500/20';
@@ -321,17 +331,20 @@
     }
 
     function saveAPIUrl() {
-      const url = document.getElementById('apiUrlInput').value.trim().replace(/\/$/, '');
-      if (!url) { showToast('Enter a Railway URL first'); return; }
-      localStorage.setItem('smm_api_url', url);
-      showToast('API URL saved — reloading…');
+      const url = document.getElementById('supabaseUrlInput').value.trim().replace(/\/$/, '');
+      const key = document.getElementById('supabaseKeyInput').value.trim();
+      if (!url || !key) { showToast('Enter the Supabase URL and key first'); return; }
+      localStorage.setItem('smm_supabase_url', url);
+      localStorage.setItem('smm_supabase_key', key);
+      showToast('Supabase connected — reloading…');
       setTimeout(() => location.reload(), 800);
     }
 
     function disconnectAPI() {
-      localStorage.removeItem('smm_api_url');
-      localStorage.removeItem('smm_token');
-      document.getElementById('apiUrlInput').value = '';
+      localStorage.removeItem('smm_supabase_url');
+      localStorage.removeItem('smm_supabase_key');
+      document.getElementById('supabaseUrlInput').value = '';
+      document.getElementById('supabaseKeyInput').value = '';
       document.getElementById('apiTestResult').classList.add('hidden');
       showToast('Disconnected — using local data only');
       setTimeout(() => location.reload(), 800);
