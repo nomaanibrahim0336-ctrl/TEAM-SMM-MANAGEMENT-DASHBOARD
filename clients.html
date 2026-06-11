@@ -56,9 +56,14 @@
               </div>
               <span id="intakeCount" class="text-xs bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 px-2 py-0.5 rounded-full font-medium">0 pending</span>
             </div>
-            <button onclick="clearIntake()" class="text-xs text-gray-500 hover:text-red-400 transition-colors">
-              <i class="fa-solid fa-trash mr-1"></i>Clear all
-            </button>
+            <div class="flex items-center gap-3">
+              <button onclick="activateAllIntake()" class="flex items-center gap-1.5 bg-green-600 hover:bg-green-500 text-white text-xs font-medium px-3 py-1.5 rounded-lg transition-colors">
+                <i class="fa-solid fa-check-double text-xs"></i> Activate All
+              </button>
+              <button onclick="clearIntake()" class="text-xs text-gray-500 hover:text-red-400 transition-colors">
+                <i class="fa-solid fa-trash mr-1"></i>Clear all
+              </button>
+            </div>
           </div>
           <div id="intakeList" class="divide-y divide-gray-800"></div>
         </div>
@@ -850,6 +855,34 @@
       }, 50);
       // Remove from intake queue after modal opens
       window._activatingIntakeId = id;
+    }
+
+    function activateAllIntake() {
+      const queue = getIntakeQueue();
+      if (!queue.length) return;
+      if (!confirm(`Activate all ${queue.length} pending client(s) with default details? You can edit each one afterwards to fill in PM, budget, dates etc.`)) return;
+
+      const today = new Date().toISOString().split('T')[0];
+      const end = new Date(); end.setMonth(end.getMonth() + 1);
+      const endDate = end.toISOString().split('T')[0];
+
+      const all = APP.clients;
+      queue.forEach(c => {
+        const client = {
+          id: 'c' + Date.now() + '_' + Math.random().toString(36).slice(2,6),
+          name: c.name, pm: '', executive: '', designer: '',
+          startDate: today, endDate: endDate, budget: 0, tenure: 1,
+          notes: '', status: 'active', phase: 'onboarding', pipelineStage: 'new',
+          currency: 'PKR', contentTypes: []
+        };
+        all.push(client);
+        apiSaveClient(client);
+      });
+      APP.clients = all;
+      saveData();
+      setIntakeQueue([]);
+      renderIntake(); renderClients(); renderStats();
+      showToast(`Activated ${queue.length} client(s) — edit each to fill in details.`);
     }
 
     function dismissIntakeClient(id) {
