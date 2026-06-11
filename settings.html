@@ -57,34 +57,49 @@
           </div>
         </div>
 
+        <!-- Connection & Integrations -->
+        <div class="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+          <div class="px-6 py-4 border-b border-gray-800 flex items-center gap-3">
+            <div>
+              <h2 class="text-sm font-semibold text-white">Backend Connection</h2>
+              <p class="text-xs text-gray-500 mt-0.5">Connect to your Railway API server for shared, real-time data</p>
+            </div>
+            <span id="apiStatusBadge" class="ml-auto text-xs px-2.5 py-1 rounded-full font-medium bg-gray-800 text-gray-400">Not connected</span>
+          </div>
+          <div class="p-6 space-y-4">
+            <div>
+              <label class="form-label">Railway API URL</label>
+              <div class="flex gap-2">
+                <input id="apiUrlInput" type="url" class="form-input flex-1" placeholder="https://your-app.up.railway.app"/>
+                <button onclick="testAPIConnection()" class="btn-secondary px-4 whitespace-nowrap">
+                  <i class="fa-solid fa-satellite-dish mr-1.5"></i>Test
+                </button>
+              </div>
+              <p class="text-xs text-gray-600 mt-1.5">Paste the URL from your Railway project dashboard (no trailing slash)</p>
+            </div>
+            <div id="apiTestResult" class="hidden rounded-lg px-4 py-3 text-sm"></div>
+            <div class="flex gap-3">
+              <button onclick="saveAPIUrl()" class="btn-primary px-5"><i class="fa-solid fa-link mr-1.5"></i>Save & Connect</button>
+              <button onclick="disconnectAPI()" class="btn-secondary px-5"><i class="fa-solid fa-link-slash mr-1.5"></i>Disconnect</button>
+            </div>
+          </div>
+          <div class="px-6 pb-6 pt-2 border-t border-gray-800">
+            <label class="form-label">Google Sheets — Apps Script URL</label>
+            <div class="flex gap-2">
+              <input id="sheetsUrlInput" type="url" class="form-input flex-1" placeholder="https://script.google.com/macros/s/.../exec"/>
+              <button onclick="saveSheetsUrl()" class="btn-primary px-5"><i class="fa-solid fa-floppy-disk mr-1.5"></i>Save</button>
+            </div>
+            <p class="text-xs text-gray-600 mt-1.5">Used by the Clients page "Export to Master" and "Pull from Intake" buttons.</p>
+          </div>
+        </div>
+
         <!-- Pipeline Stages -->
         <div class="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
           <div class="px-6 py-4 border-b border-gray-800">
             <h2 class="text-sm font-semibold text-white">Pipeline Stages</h2>
             <p class="text-xs text-gray-500 mt-0.5">The content workflow stages visible on the Kanban board</p>
           </div>
-          <div class="p-6 space-y-2">
-            ${[
-              { id:'new', label:'New', desc:'Task just created by PM', color:'bg-blue-500' },
-              { id:'ready_to_designer', label:'Ready to Designer', desc:'Creator finished, waiting for designer', color:'bg-violet-500' },
-              { id:'with_designer', label:'With Designer', desc:'Designer is working on it', color:'bg-purple-500' },
-              { id:'pending_review', label:'Pending PM Review', desc:'Design done, PM needs to approve', color:'bg-yellow-500' },
-              { id:'changes_requested', label:'Changes Requested', desc:'PM asked for modifications', color:'bg-red-500' },
-              { id:'additional_content', label:'Additional Content', desc:'PM requested extra content', color:'bg-orange-500' },
-              { id:'ready_to_post', label:'Ready to Post', desc:'Approved, ready to go live', color:'bg-green-500' },
-              { id:'posted', label:'Posted', desc:'Content is live, task complete', color:'bg-emerald-500' },
-            ].map((s, i) => `
-              <div class="flex items-center gap-3 p-3 bg-gray-800 rounded-lg border border-gray-700">
-                <span class="text-gray-600 text-xs w-4 text-center font-mono">${i+1}</span>
-                <span class="w-2.5 h-2.5 rounded-full ${s.color} flex-shrink-0"></span>
-                <div class="flex-1 min-w-0">
-                  <p class="text-sm font-medium text-white">${s.label}</p>
-                  <p class="text-xs text-gray-500">${s.desc}</p>
-                </div>
-                <i class="fa-solid fa-lock text-gray-700 text-xs" title="System stage"></i>
-              </div>`).join('')}
-            <p class="text-xs text-gray-600 mt-2 italic">Pipeline stages are fixed to match your workflow. Contact admin to modify.</p>
-          </div>
+          <div class="p-6 space-y-2" id="pipelineStagesList"></div>
         </div>
 
         <!-- Notification Preferences -->
@@ -93,23 +108,7 @@
             <h2 class="text-sm font-semibold text-white">Alert Preferences</h2>
             <p class="text-xs text-gray-500 mt-0.5">Control which alerts appear on the dashboard</p>
           </div>
-          <div class="p-6 space-y-4">
-            ${[
-              { id:'alert_contract', label:'Contract Expiry Alerts', desc:'Warn when client contracts are ending within 30 days', default: true },
-              { id:'alert_overdue', label:'Overdue Task Alerts', desc:'Highlight tasks past their due date', default: true },
-              { id:'alert_stuck', label:'Stuck Task Alerts', desc:'Flag tasks with no updates for 3+ days', default: true },
-              { id:'alert_pending', label:'Pending Review Alerts', desc:'Remind when tasks are waiting for PM review 2+ days', default: false },
-            ].map(n => `
-              <div class="flex items-center justify-between">
-                <div>
-                  <p class="text-sm font-medium text-white">${n.label}</p>
-                  <p class="text-xs text-gray-500 mt-0.5">${n.desc}</p>
-                </div>
-                <button onclick="toggleAlert(this)" data-id="${n.id}" class="relative w-11 h-6 rounded-full transition-colors duration-200 ${n.default ? 'bg-indigo-600' : 'bg-gray-700'}" role="switch">
-                  <span class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${n.default ? 'translate-x-5' : 'translate-x-0'}"></span>
-                </button>
-              </div>`).join('')}
-          </div>
+          <div class="p-6 space-y-4" id="alertPrefsList"></div>
         </div>
 
         <!-- Data Management -->
@@ -199,7 +198,78 @@
       setTimeout(() => t.classList.add('hidden'), 3000);
     }
 
-    function saveWorkspace() { showToast('Workspace settings saved'); }
+    const PIPELINE_STAGES = [
+      { id:'new', label:'New', desc:'Task just created by PM', color:'bg-blue-500' },
+      { id:'ready_to_designer', label:'Ready to Designer', desc:'Creator finished, waiting for designer', color:'bg-violet-500' },
+      { id:'with_designer', label:'With Designer', desc:'Designer is working on it', color:'bg-purple-500' },
+      { id:'pending_review', label:'Pending PM Review', desc:'Design done, PM needs to approve', color:'bg-yellow-500' },
+      { id:'changes_requested', label:'Changes Requested', desc:'PM asked for modifications', color:'bg-red-500' },
+      { id:'additional_content', label:'Additional Content', desc:'PM requested extra content', color:'bg-orange-500' },
+      { id:'ready_to_post', label:'Ready to Post', desc:'Approved, ready to go live', color:'bg-green-500' },
+      { id:'posted', label:'Posted', desc:'Content is live, task complete', color:'bg-emerald-500' },
+    ];
+
+    const ALERT_DEFS = [
+      { id:'alert_contract', label:'Contract Expiry Alerts', desc:'Warn when client contracts are ending within 30 days', default: true },
+      { id:'alert_overdue', label:'Overdue Task Alerts', desc:'Highlight tasks past their due date', default: true },
+      { id:'alert_stuck', label:'Stuck Task Alerts', desc:'Flag tasks with no updates for 3+ days', default: true },
+      { id:'alert_pending', label:'Pending Review Alerts', desc:'Remind when tasks are waiting for PM review 2+ days', default: false },
+    ];
+
+    function getAlertPrefs() {
+      const saved = JSON.parse(localStorage.getItem('smm_alert_prefs') || '{}');
+      const prefs = {};
+      ALERT_DEFS.forEach(a => prefs[a.id] = (a.id in saved) ? saved[a.id] : a.default);
+      return prefs;
+    }
+
+    function renderPipelineStages() {
+      document.getElementById('pipelineStagesList').innerHTML =
+        PIPELINE_STAGES.map((s, i) => `
+          <div class="flex items-center gap-3 p-3 bg-gray-800 rounded-lg border border-gray-700">
+            <span class="text-gray-600 text-xs w-4 text-center font-mono">${i+1}</span>
+            <span class="w-2.5 h-2.5 rounded-full ${s.color} flex-shrink-0"></span>
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-medium text-white">${s.label}</p>
+              <p class="text-xs text-gray-500">${s.desc}</p>
+            </div>
+            <i class="fa-solid fa-lock text-gray-700 text-xs" title="System stage"></i>
+          </div>`).join('') +
+        `<p class="text-xs text-gray-600 mt-2 italic">Pipeline stages are fixed to match your workflow. Contact admin to modify.</p>`;
+    }
+
+    function renderAlertPrefs() {
+      const prefs = getAlertPrefs();
+      document.getElementById('alertPrefsList').innerHTML =
+        ALERT_DEFS.map(n => {
+          const on = prefs[n.id];
+          return `
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm font-medium text-white">${n.label}</p>
+              <p class="text-xs text-gray-500 mt-0.5">${n.desc}</p>
+            </div>
+            <button onclick="toggleAlert(this)" data-id="${n.id}" class="relative w-11 h-6 rounded-full transition-colors duration-200 ${on ? 'bg-indigo-600' : 'bg-gray-700'}" role="switch">
+              <span class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${on ? 'translate-x-5' : 'translate-x-0'}"></span>
+            </button>
+          </div>`;
+        }).join('');
+    }
+
+    function loadWorkspace() {
+      const ws = JSON.parse(localStorage.getItem('smm_workspace') || '{}');
+      if (ws.name) document.getElementById('wsName').value = ws.name;
+      if (ws.currency) document.getElementById('wsCurrency').value = ws.currency;
+    }
+
+    function saveWorkspace() {
+      const ws = {
+        name: document.getElementById('wsName').value.trim() || 'SMM-MANAGER',
+        currency: document.getElementById('wsCurrency').value,
+      };
+      localStorage.setItem('smm_workspace', JSON.stringify(ws));
+      showToast('Workspace settings saved');
+    }
 
     function toggleAlert(btn) {
       const isOn = btn.classList.contains('bg-indigo-600');
@@ -208,6 +278,75 @@
       const dot = btn.querySelector('span');
       dot.classList.toggle('translate-x-5', !isOn);
       dot.classList.toggle('translate-x-0', isOn);
+      const prefs = getAlertPrefs();
+      prefs[btn.dataset.id] = !isOn;
+      localStorage.setItem('smm_alert_prefs', JSON.stringify(prefs));
+    }
+
+    // ===== Backend Connection =====
+    function updateAPIStatusBadgeLocal() {
+      const url = localStorage.getItem('smm_api_url') || '';
+      const badge = document.getElementById('apiStatusBadge');
+      const input = document.getElementById('apiUrlInput');
+      if (input && !input.value) input.value = url;
+      if (url) {
+        badge.className = 'ml-auto text-xs px-2.5 py-1 rounded-full font-medium bg-green-500/15 text-green-400';
+        badge.innerHTML = '<i class="fa-solid fa-circle text-green-400 text-[8px] mr-1 animate-pulse"></i>Connected';
+      } else {
+        badge.className = 'ml-auto text-xs px-2.5 py-1 rounded-full font-medium bg-gray-800 text-gray-400';
+        badge.textContent = 'Not connected';
+      }
+    }
+
+    async function testAPIConnection() {
+      const url = document.getElementById('apiUrlInput').value.trim().replace(/\/$/, '');
+      const result = document.getElementById('apiTestResult');
+      if (!url) { showToast('Enter a URL first'); return; }
+      result.className = 'rounded-lg px-4 py-3 text-sm bg-gray-800 text-gray-400';
+      result.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i>Testing connection…';
+      result.classList.remove('hidden');
+      try {
+        const res = await fetch(url + '/health', { signal: AbortSignal.timeout(8000) });
+        const data = await res.json();
+        if (res.ok) {
+          result.className = 'rounded-lg px-4 py-3 text-sm bg-green-500/10 text-green-400 border border-green-500/20';
+          result.innerHTML = `<i class="fa-solid fa-circle-check mr-2"></i>Connected — server is online (${data.timestamp ? new Date(data.timestamp).toLocaleTimeString() : 'OK'})`;
+        } else {
+          throw new Error('Server responded with error');
+        }
+      } catch (err) {
+        result.className = 'rounded-lg px-4 py-3 text-sm bg-red-500/10 text-red-400 border border-red-500/20';
+        result.innerHTML = `<i class="fa-solid fa-circle-xmark mr-2"></i>Could not connect — ${err.message}`;
+      }
+    }
+
+    function saveAPIUrl() {
+      const url = document.getElementById('apiUrlInput').value.trim().replace(/\/$/, '');
+      if (!url) { showToast('Enter a Railway URL first'); return; }
+      localStorage.setItem('smm_api_url', url);
+      showToast('API URL saved — reloading…');
+      setTimeout(() => location.reload(), 800);
+    }
+
+    function disconnectAPI() {
+      localStorage.removeItem('smm_api_url');
+      localStorage.removeItem('smm_token');
+      document.getElementById('apiUrlInput').value = '';
+      document.getElementById('apiTestResult').classList.add('hidden');
+      showToast('Disconnected — using local data only');
+      setTimeout(() => location.reload(), 800);
+    }
+
+    // ===== Google Sheets =====
+    function saveSheetsUrl() {
+      const url = document.getElementById('sheetsUrlInput').value.trim();
+      if (!url) { showToast('Enter an Apps Script URL first'); return; }
+      localStorage.setItem('smm_sheets_url', url);
+      showToast('Google Sheets URL saved');
+    }
+
+    function loadSheetsUrl() {
+      document.getElementById('sheetsUrlInput').value = localStorage.getItem('smm_sheets_url') || '';
     }
 
     function exportData() {
@@ -241,10 +380,8 @@
     function resetData() {
       if (!confirm('This will delete ALL data including clients, tasks and team members. Are you absolutely sure?')) return;
       if (!confirm('Last warning — this cannot be undone. Continue?')) return;
-      localStorage.removeItem('smm_clients');
-      localStorage.removeItem('smm_tasks');
-      localStorage.removeItem('smm_team');
-      localStorage.removeItem('smm_user');
+      ['smm_clients','smm_tasks','smm_team','smm_user','smm_token','smm_intake',
+       'smm_workspace','smm_alert_prefs','smm_sheets_url'].forEach(k => localStorage.removeItem(k));
       window.location.href = 'login.html';
     }
 
@@ -257,7 +394,14 @@
     document.addEventListener('DOMContentLoaded', () => {
       const user = pageInit();
       if (!user) return;
+      loadWorkspace();
+      renderPipelineStages();
+      renderAlertPrefs();
+      updateAPIStatusBadgeLocal();
+      loadSheetsUrl();
       updateSysInfo();
+      if (APP.useAPI) syncFromAPI().then(() => updateSysInfo());
+      document.addEventListener('smm:synced', updateSysInfo);
     });
   </script>
 </body>

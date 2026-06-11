@@ -765,7 +765,7 @@
       document.addEventListener('smm:synced', () => { renderStats(); renderClients(); renderIntake(); });
     });
 
-    const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbzdDEkv-fgVvsQ6WXhH1MRkIlubZzp17YCVdNBAQ_3Gr6JVYCOuPEq9t82LxS9No3ry/exec';
+    const SHEETS_URL = localStorage.getItem('smm_sheets_url') || 'https://script.google.com/macros/s/AKfycbzdDEkv-fgVvsQ6WXhH1MRkIlubZzp17YCVdNBAQ_3Gr6JVYCOuPEq9t82LxS9No3ry/exec';
 
     async function exportToSheets() {
       const btn = event.currentTarget;
