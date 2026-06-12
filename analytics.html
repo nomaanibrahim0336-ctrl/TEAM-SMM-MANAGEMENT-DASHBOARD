@@ -137,7 +137,7 @@
             <h2 class="text-sm font-semibold text-white mb-4">Budget Overview</h2>
             <div class="space-y-3">
               <div class="text-center py-2">
-                <p class="text-3xl font-bold text-white">PKR ${(totalBudget/1000).toFixed(0)}K</p>
+                <p class="text-3xl font-bold text-white">${getCurrency()} ${(totalBudget/1000).toFixed(0)}K</p>
                 <p class="text-xs text-gray-500 mt-1">Total monthly retainer</p>
               </div>
               <div class="pt-2 border-t border-gray-800 space-y-2">
@@ -312,7 +312,7 @@
                   <td class="text-green-400">${c.pm||'—'}</td>
                   <td>${c.endDate ? formatDate(c.endDate) : '—'}</td>
                   <td><span class="${dClass}">${days < 0 ? Math.abs(days)+'d ago' : days+'d'}</span></td>
-                  <td>PKR ${(c.budget||0).toLocaleString()}</td>
+                  <td>${getCurrency()} ${(c.budget||0).toLocaleString()}</td>
                   <td>${badge}</td>
                 </tr>`;
               }).join('') || '<tr><td colspan="6" class="text-center text-xs text-gray-600 py-4">No clients yet</td></tr>'}

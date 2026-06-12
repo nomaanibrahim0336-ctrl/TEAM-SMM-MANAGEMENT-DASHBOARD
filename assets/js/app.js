@@ -85,6 +85,14 @@ function normalizeMember(m) {
   };
 }
 
+// getCurrency — reads the workspace default currency set in Settings
+function getCurrency() {
+  try {
+    const ws = JSON.parse(localStorage.getItem('smm_workspace') || '{}');
+    return ws.currency || 'PKR';
+  } catch { return 'PKR'; }
+}
+
 // saveData — writes to localStorage and fires background API sync
 function saveData() {
   localStorage.setItem('smm_clients', JSON.stringify(APP.clients));

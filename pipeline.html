@@ -475,7 +475,7 @@
       const info = document.getElementById('clientInfoText');
       if (c) {
         banner.classList.remove('hidden');
-        info.textContent = `Lead: ${c.pm||'—'} · Executive: ${c.executive||'—'} · Designer: ${c.designer||'—'} · Budget: PKR ${(c.budget||0).toLocaleString()} · Ends: ${formatDate(c.endDate)}`;
+        info.textContent = `Lead: ${c.pm||'—'} · Executive: ${c.executive||'—'} · Designer: ${c.designer||'—'} · Budget: ${getCurrency()} ${(c.budget||0).toLocaleString()} · Ends: ${formatDate(c.endDate)}`;
       } else { banner.classList.add('hidden'); }
     }
 

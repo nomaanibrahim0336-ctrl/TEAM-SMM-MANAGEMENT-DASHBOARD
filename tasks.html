@@ -453,7 +453,7 @@
       const banner = document.getElementById('ntClientBanner');
       if (c) {
         banner.classList.remove('hidden');
-        const parts = [`Lead: ${c.pm||'—'}`, `Executive: ${c.executive||'—'}`, `Designer: ${c.designer||'—'}`, `Budget: PKR ${(c.budget||0).toLocaleString()}`, `Ends: ${formatDate(c.endDate)}`];
+        const parts = [`Lead: ${c.pm||'—'}`, `Executive: ${c.executive||'—'}`, `Designer: ${c.designer||'—'}`, `Budget: ${getCurrency()} ${(c.budget||0).toLocaleString()}`, `Ends: ${formatDate(c.endDate)}`];
         document.getElementById('ntClientInfo').textContent = parts.join(' · ');
       } else {
         banner.classList.add('hidden');
