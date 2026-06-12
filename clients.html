@@ -30,15 +30,9 @@
           <option value="ending_soon">Ending Soon</option>
           <option value="paused">Paused</option>
         </select>
-        <button onclick="openBulkAssignModal()" class="flex items-center gap-2 bg-gray-800 hover:bg-gray-700 border border-gray-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors whitespace-nowrap">
-          <i class="fa-solid fa-users-gear text-xs"></i> Bulk Assign PM
-        </button>
-        <button onclick="exportToSheets()" class="flex items-center gap-2 bg-green-600 hover:bg-green-500 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors whitespace-nowrap">
-          <i class="fa-solid fa-cloud-arrow-up text-xs"></i> Export to Master
-        </button>
-        <button onclick="pullFromSheets(this)" class="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors whitespace-nowrap">
-          <i class="fa-solid fa-cloud-arrow-down text-xs"></i> Pull from Intake
-        </button>
+        <div id="bulkAssignBtn"></div>
+        <div id="exportSheetsBtn"></div>
+        <div id="pullIntakeBtn"></div>
         <div id="addClientBtn"></div>
       </div>
     </header>
@@ -60,9 +54,7 @@
               <span id="intakeCount" class="text-xs bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 px-2 py-0.5 rounded-full font-medium">0 pending</span>
             </div>
             <div class="flex items-center gap-3">
-              <button onclick="activateAllIntake()" class="flex items-center gap-1.5 bg-green-600 hover:bg-green-500 text-white text-xs font-medium px-3 py-1.5 rounded-lg transition-colors">
-                <i class="fa-solid fa-check-double text-xs"></i> Activate All
-              </button>
+              <div id="activateAllBtn" class="inline"></div>
               <button onclick="clearIntake()" class="text-xs text-gray-500 hover:text-red-400 transition-colors">
                 <i class="fa-solid fa-trash mr-1"></i>Clear all
               </button>
@@ -785,11 +777,35 @@
     document.addEventListener('DOMContentLoaded', () => {
       _currentUser = pageInit();
       if (!_currentUser) return;
-      // Only admin & PM can add/edit clients
-      if (can('edit_client', _currentUser)) {
+      // Show/hide action buttons based on granted permissions
+      if (can('add_client', _currentUser)) {
         document.getElementById('addClientBtn').innerHTML = `
           <button onclick="openClientModal()" class="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors">
             <i class="fa-solid fa-plus text-xs"></i> Add Client
+          </button>`;
+      }
+      if (can('bulk_assign_pm', _currentUser)) {
+        document.getElementById('bulkAssignBtn').innerHTML = `
+          <button onclick="openBulkAssignModal()" class="flex items-center gap-2 bg-gray-800 hover:bg-gray-700 border border-gray-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors whitespace-nowrap">
+            <i class="fa-solid fa-users-gear text-xs"></i> Bulk Assign PM
+          </button>`;
+      }
+      if (can('export_sheets', _currentUser)) {
+        document.getElementById('exportSheetsBtn').innerHTML = `
+          <button onclick="exportToSheets()" class="flex items-center gap-2 bg-green-600 hover:bg-green-500 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors whitespace-nowrap">
+            <i class="fa-solid fa-cloud-arrow-up text-xs"></i> Export to Master
+          </button>`;
+      }
+      if (can('pull_intake', _currentUser)) {
+        document.getElementById('pullIntakeBtn').innerHTML = `
+          <button onclick="pullFromSheets(this)" class="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors whitespace-nowrap">
+            <i class="fa-solid fa-cloud-arrow-down text-xs"></i> Pull from Intake
+          </button>`;
+      }
+      if (can('activate_all_intake', _currentUser)) {
+        document.getElementById('activateAllBtn').innerHTML = `
+          <button onclick="activateAllIntake()" class="flex items-center gap-1.5 bg-green-600 hover:bg-green-500 text-white text-xs font-medium px-3 py-1.5 rounded-lg transition-colors">
+            <i class="fa-solid fa-check-double text-xs"></i> Activate All
           </button>`;
       }
       renderStats();

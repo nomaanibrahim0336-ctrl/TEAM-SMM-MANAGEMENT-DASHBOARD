@@ -53,6 +53,33 @@
         <h2 class="text-sm font-semibold text-white mb-4">Role Permissions Reference</h2>
         <div class="grid grid-cols-4 gap-4" id="permsReference"></div>
       </div>
+
+      <!-- Role Permission Granting -->
+      <div class="bg-gray-900 border border-gray-800 rounded-xl p-5">
+        <div class="flex items-center justify-between mb-1">
+          <div>
+            <h2 class="text-sm font-semibold text-white">Grant Permissions</h2>
+            <p class="text-xs text-gray-500 mt-0.5">Choose exactly what each role is allowed to do. Admin always has full access.</p>
+          </div>
+          <button onclick="savePermissions()" class="btn-primary px-4">
+            <i class="fa-solid fa-floppy-disk mr-1.5"></i>Save Permissions
+          </button>
+        </div>
+        <div class="overflow-x-auto mt-4">
+          <table class="data-table" id="permsGridTable">
+            <thead>
+              <tr>
+                <th>Action</th>
+                <th class="text-center">Team Lead</th>
+                <th class="text-center">Executive</th>
+                <th class="text-center">Designer</th>
+                <th class="text-center">Client Mgmt</th>
+              </tr>
+            </thead>
+            <tbody id="permsGridBody"></tbody>
+          </table>
+        </div>
+      </div>
       <!-- API / BACKEND SETTINGS -->
       <div class="mt-8 bg-gray-900 border border-gray-800 rounded-2xl p-6">
         <div class="flex items-center gap-3 mb-5">
@@ -241,6 +268,40 @@
             ${r.list.map(p => `<li class="flex items-start gap-2 text-xs text-gray-400"><i class="fa-solid fa-check text-green-500 mt-0.5 flex-shrink-0"></i>${p}</li>`).join('')}
           </ul>
         </div>`).join('');
+    }
+
+    // ===== ROLE PERMISSION GRANTING =====
+    function renderPermissionsGrid() {
+      const perms = getRolePermissions();
+      const groups = {};
+      PERMISSION_ACTIONS.forEach(a => { (groups[a.group] = groups[a.group] || []).push(a); });
+
+      let html = '';
+      Object.keys(groups).forEach(group => {
+        html += `<tr><td colspan="5" class="bg-gray-800/50 text-xs font-semibold text-gray-400 uppercase tracking-wider">${group}</td></tr>`;
+        groups[group].forEach(a => {
+          html += `<tr>
+            <td class="text-gray-200">${a.label}</td>
+            ${GRANTABLE_ROLES.map(role => `
+              <td class="text-center">
+                <input type="checkbox" class="perm-check w-4 h-4 accent-indigo-500 cursor-pointer"
+                  data-action="${a.key}" data-role="${role}"
+                  ${(perms[a.key] || []).includes(role) ? 'checked' : ''}/>
+              </td>`).join('')}
+          </tr>`;
+        });
+      });
+      document.getElementById('permsGridBody').innerHTML = html;
+    }
+
+    function savePermissions() {
+      const perms = {};
+      PERMISSION_ACTIONS.forEach(a => { perms[a.key] = []; });
+      document.querySelectorAll('.perm-check').forEach(cb => {
+        if (cb.checked) perms[cb.dataset.action].push(cb.dataset.role);
+      });
+      saveRolePermissions(perms);
+      showToast('Permissions updated successfully!');
     }
 
     function renderAdmin() {
@@ -489,6 +550,7 @@
       if (!user) return;
       renderAdmin();
       renderPermsReference();
+      renderPermissionsGrid();
       updateAPIStatusBadge();
       if (APP.useAPI) syncFromAPI().then(() => renderAdmin());
       document.addEventListener('smm:synced', () => renderAdmin());

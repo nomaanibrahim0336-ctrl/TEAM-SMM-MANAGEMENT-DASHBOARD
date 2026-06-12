@@ -218,6 +218,7 @@ const ROLE_LABELS = {
   project_manager: 'Team Lead',
   creator:         'Executive',
   designer:        'Designer',
+  client_manager:  'Client Management',
 };
 
 const ROLE_AVATAR_BG = {
@@ -225,6 +226,7 @@ const ROLE_AVATAR_BG = {
   project_manager: 'bg-green-700',
   creator:         'bg-blue-700',
   designer:        'bg-pink-700',
+  client_manager:  'bg-yellow-700',
 };
 
 // Pages each role can access (filename)
@@ -233,6 +235,7 @@ const ROLE_ACCESS = {
   project_manager: ['index.html','clients.html','pipeline.html','tasks.html','team.html','analytics.html'],
   creator:         ['index.html','pipeline.html','tasks.html','team.html'],
   designer:        ['index.html','pipeline.html','tasks.html','team.html'],
+  client_manager:  ['index.html','clients.html','pipeline.html','tasks.html','team.html'],
 };
 
 // Nav items each role sees
@@ -241,7 +244,60 @@ const ROLE_NAV = {
   project_manager: ['dashboard','clients','pipeline','tasks','team','analytics'],
   creator:         ['dashboard','pipeline','tasks','team'],
   designer:        ['dashboard','pipeline','tasks','team'],
+  client_manager:  ['dashboard','clients','pipeline','tasks','team'],
 };
+
+// ===== PERMISSION GRANTING (Admin Panel > Role Permissions tab) =====
+// Roles whose access can be customized by the admin (admin role always has full access)
+const GRANTABLE_ROLES = ['project_manager','creator','designer','client_manager'];
+
+// Every grantable action, grouped for display in the admin UI
+const PERMISSION_ACTIONS = [
+  { key:'add_client',          label:'Add / Edit Clients',         group:'Clients' },
+  { key:'delete_client',        label:'Delete Clients',             group:'Clients' },
+  { key:'pull_intake',          label:'Pull Intake from Sheets',    group:'Clients' },
+  { key:'export_sheets',        label:'Export Clients to Sheets',   group:'Clients' },
+  { key:'activate_all_intake',  label:'Activate All Intake',        group:'Clients' },
+  { key:'bulk_assign_pm',        label:'Bulk Assign PM',             group:'Clients' },
+  { key:'create_task',          label:'Create Tasks',               group:'Tasks' },
+  { key:'approve_task',         label:'Approve / Reject Tasks',      group:'Tasks' },
+  { key:'request_changes',      label:'Request Changes',            group:'Tasks' },
+  { key:'move_to_designer',     label:'Move Task to Designer',      group:'Tasks' },
+  { key:'mark_design_done',     label:'Mark Design Done',           group:'Tasks' },
+  { key:'post_content',         label:'Mark as Posted',             group:'Tasks' },
+  { key:'view_analytics',       label:'View Analytics',             group:'Other' },
+  { key:'manage_team',          label:'Manage Team Members',        group:'Other' },
+];
+
+// Default access per action — admin always has every action regardless of this list
+const DEFAULT_PERMISSIONS = {
+  add_client:         ['project_manager','client_manager'],
+  delete_client:      [],
+  pull_intake:        ['client_manager'],
+  export_sheets:      ['client_manager'],
+  activate_all_intake:['client_manager'],
+  bulk_assign_pm:     ['project_manager','client_manager'],
+  create_task:        ['project_manager'],
+  approve_task:       ['project_manager'],
+  request_changes:    ['project_manager'],
+  move_to_designer:   ['creator'],
+  mark_design_done:   ['designer'],
+  post_content:       ['creator','project_manager'],
+  view_analytics:     ['project_manager'],
+  manage_team:        [],
+};
+
+// Returns the active permission map (action -> roles), merging any admin-saved
+// overrides from localStorage on top of the defaults above.
+function getRolePermissions() {
+  let overrides = {};
+  try { overrides = JSON.parse(localStorage.getItem('smm_role_permissions')) || {}; } catch {}
+  return { ...DEFAULT_PERMISSIONS, ...overrides };
+}
+
+function saveRolePermissions(perms) {
+  localStorage.setItem('smm_role_permissions', JSON.stringify(perms));
+}
 
 function getCurrentUser() {
   return JSON.parse(localStorage.getItem('smm_user')) || null;
@@ -271,31 +327,25 @@ function getVisibleTasks(allTasks, user) {
 // Clients visible to current user
 function getVisibleClients(allClients, user) {
   if (!user) return [];
-  if (user.role === 'admin' || user.role === 'project_manager') return allClients;
+  if (user.role === 'admin' || user.role === 'project_manager' || user.role === 'client_manager') return allClients;
   if (user.role === 'creator') return allClients.filter(c => c.executive === user.name || c.pm === user.name);
   if (user.role === 'designer') return allClients.filter(c => c.designer === user.name);
   return [];
 }
 
-// What actions a role can perform
+// What actions a role can perform.
+// 'admin' always has full access. Other roles fall back to DEFAULT_PERMISSIONS,
+// which can be customized at runtime via the Admin Panel > Role Permissions tab
+// (saved to localStorage as smm_role_permissions and read by getRolePermissions()).
 function can(action, user) {
   if (!user) return false;
   const r = user.role;
-  const perms = {
-    create_task:      ['admin','project_manager'],
-    approve_task:     ['admin','project_manager'],
-    reject_task:      ['admin','project_manager'],
-    request_changes:  ['admin','project_manager'],
-    move_to_designer: ['admin','creator'],
-    mark_design_done: ['admin','designer'],
-    post_content:     ['admin','creator','project_manager'],
-    edit_client:      ['admin','project_manager'],
-    delete_client:    ['admin'],
-    manage_team:      ['admin'],
-    view_analytics:   ['admin','project_manager'],
-    view_admin_panel: ['admin'],
-  };
-  return (perms[action] || []).includes(r);
+  if (r === 'admin') return true;
+  // Aliases for actions referenced by older code/keys
+  const aliasMap = { edit_client:'add_client', reject_task:'approve_task', view_admin_panel:'manage_team' };
+  const key = aliasMap[action] || action;
+  const perms = getRolePermissions();
+  return (perms[key] || []).includes(r);
 }
 
 // ===== SIDEBAR =====
