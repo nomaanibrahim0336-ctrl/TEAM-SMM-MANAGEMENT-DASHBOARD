@@ -316,7 +316,7 @@
     }
 
     function renderStats() {
-      const clients = APP.clients;
+      const clients = getVisibleClients(APP.clients, _currentUser);
       const active = clients.filter(c => getClientStatus(c) === 'active').length;
       const ending = clients.filter(c => getClientStatus(c) === 'ending_soon').length;
       const total = clients.reduce((s, c) => s + (c.budget || 0), 0);
@@ -374,7 +374,7 @@
       const statusF = document.getElementById('statusFilter').value;
       const canEdit = _currentUser && (_currentUser.role === 'admin' || _currentUser.role === 'pm');
 
-      const allClients = APP.clients;
+      const allClients = getVisibleClients(APP.clients, _currentUser);
       const pms = [...new Set(allClients.map(c => c.pm).filter(Boolean))].sort();
 
       const tabs = [{ id: 'all', label: 'All Clients', icon: 'fa-users' }, ...pms.map(pm => ({ id: pm, label: pm, icon: 'fa-user' }))];
@@ -554,9 +554,19 @@
       const allClients = APP.clients;
       if (id) {
         const idx = allClients.findIndex(c => c.id === id);
-        if (idx !== -1) allClients[idx] = data;
-        else allClients.push(data);
+        if (idx !== -1) {
+          // Preserve who originally entered this client
+          data.createdBy = allClients[idx].createdBy || '';
+          data.createdDate = allClients[idx].createdDate || '';
+          allClients[idx] = data;
+        } else {
+          data.createdBy = _currentUser.name;
+          data.createdDate = new Date().toISOString().split('T')[0];
+          allClients.push(data);
+        }
       } else {
+        data.createdBy = _currentUser.name;
+        data.createdDate = new Date().toISOString().split('T')[0];
         allClients.push(data);
       }
       APP.clients = allClients;
@@ -951,7 +961,8 @@
           name: c.name, pm: '', executive: '', designer: '',
           startDate: today, endDate: endDate, budget: 0, tenure: 1,
           notes: '', status: 'active', phase: 'onboarding', pipelineStage: 'new',
-          currency: getCurrency(), contentTypes: []
+          currency: getCurrency(), contentTypes: [],
+          createdBy: _currentUser.name, createdDate: today
         };
         all.push(client);
         apiSaveClient(client);

@@ -61,6 +61,8 @@ function normalizeClient(c) {
     endDate:   c.end_date   || c.endDate,
     tenure: c.tenure, brief: c.brief,
     executive: c.executive, designer: c.designer, pm: c.pm,
+    createdBy: c.created_by || c.createdBy || '',
+    createdDate: c.created_date || c.createdDate || '',
     ...c
   };
 }
@@ -324,13 +326,17 @@ function getVisibleTasks(allTasks, user) {
   return [];
 }
 
-// Clients visible to current user
+// Clients visible to current user.
+// Admin sees everything (full roster lives in Admin Panel > All Clients).
+// Every other role only sees clients they personally entered, plus any
+// already assigned to them as executive/pm/designer.
 function getVisibleClients(allClients, user) {
   if (!user) return [];
-  if (user.role === 'admin' || user.role === 'project_manager' || user.role === 'client_manager') return allClients;
-  if (user.role === 'creator') return allClients.filter(c => c.executive === user.name || c.pm === user.name);
-  if (user.role === 'designer') return allClients.filter(c => c.designer === user.name);
-  return [];
+  if (user.role === 'admin') return allClients;
+  return allClients.filter(c =>
+    c.createdBy === user.name ||
+    c.executive === user.name || c.pm === user.name || c.designer === user.name
+  );
 }
 
 // What actions a role can perform.

@@ -48,6 +48,29 @@
         </table>
       </div>
 
+      <!-- All Clients -->
+      <div class="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+        <div class="px-5 py-4 border-b border-gray-800 flex items-center justify-between">
+          <h2 class="text-sm font-semibold text-white">All Clients</h2>
+          <span class="text-xs text-gray-500" id="allClientsCount"></span>
+        </div>
+        <div class="overflow-x-auto">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Client</th>
+              <th>Added By</th>
+              <th>Date Added</th>
+              <th>Team Lead</th>
+              <th>Status</th>
+              <th>Budget</th>
+            </tr>
+          </thead>
+          <tbody id="allClientsTableBody"></tbody>
+        </table>
+        </div>
+      </div>
+
       <!-- Permissions Reference -->
       <div class="bg-gray-900 border border-gray-800 rounded-xl p-5">
         <h2 class="text-sm font-semibold text-white mb-4">Role Permissions Reference</h2>
@@ -364,6 +387,20 @@
       }).join('');
     }
 
+    function renderAllClientsTable() {
+      const clients = APP.clients || [];
+      document.getElementById('allClientsCount').textContent = `${clients.length} clients`;
+      document.getElementById('allClientsTableBody').innerHTML = clients.map(c => `
+        <tr>
+          <td><span class="font-medium text-white">${c.name || '—'}</span></td>
+          <td class="text-gray-400">${c.createdBy || '—'}</td>
+          <td class="text-gray-400">${c.createdDate ? formatDate(c.createdDate) : '—'}</td>
+          <td class="text-gray-400">${c.pm || '—'}</td>
+          <td><span class="status-badge">${c.status || '—'}</span></td>
+          <td class="text-gray-400">${getCurrency()}${Number(c.budget || 0).toLocaleString()}</td>
+        </tr>`).join('');
+    }
+
     // Add / Edit Member
     function openAddMember() {
       document.getElementById('memberId').value = '';
@@ -549,11 +586,12 @@
       const user = pageInit();
       if (!user) return;
       renderAdmin();
+      renderAllClientsTable();
       renderPermsReference();
       renderPermissionsGrid();
       updateAPIStatusBadge();
-      if (APP.useAPI) syncFromAPI().then(() => renderAdmin());
-      document.addEventListener('smm:synced', () => renderAdmin());
+      if (APP.useAPI) syncFromAPI().then(() => { renderAdmin(); renderAllClientsTable(); });
+      document.addEventListener('smm:synced', () => { renderAdmin(); renderAllClientsTable(); });
     });
 
     function updateAPIStatusBadge() {
