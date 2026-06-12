@@ -38,13 +38,30 @@ body {
 .text-gray-600 { color: #94A3B8 !important; }
 .hover\:bg-gray-800:hover, .hover\:bg-gray-700:hover { background-color: var(--grey-surface) !important; }
 
-/* On light surfaces, force descendant white text to dark — but leave
-   text-white alone where it's sitting on an accent/colored background
-   (buttons, active nav, badges, avatars) so it stays legible. */
-.bg-gray-950 .text-white, .bg-gray-900 .text-white, .bg-gray-800 .text-white,
-.bg-gray-950.text-white, .bg-gray-900.text-white, .bg-gray-800.text-white {
+/* Headings/labels/text marked text-white were authored for a dark page —
+   darken them for the light theme, UNLESS the same element also carries
+   its own colored/accent background (badges, buttons, avatars), which
+   should keep white text for contrast. Detected via [class*="bg-"]. */
+h1.text-white, h2.text-white, h3.text-white, h4.text-white, h5.text-white,
+p.text-white, span.text-white:not([class*="bg-"]),
+div.text-white:not([class*="bg-"]), td.text-white, th.text-white,
+label.text-white, a.text-white:not([class*="bg-"]),
+i.text-white:not([class*="bg-"]), strong.text-white {
   color: var(--text-primary) !important;
 }
+/* bg-gray-600/700 and partial-opacity gray-800 chips were dark-theme
+   "neutral" surfaces — keep them dark with light text on the light theme too,
+   so badges/pills using these still read clearly. */
+.bg-gray-600, .bg-gray-700, .bg-gray-800\/30, .bg-gray-800\/40, .bg-gray-800\/60 {
+  background-color: #475569 !important;
+  color: #F8FAFC !important;
+}
+.bg-gray-950\/80 {
+  background-color: rgba(30,41,59,0.85) !important;
+  color: #F8FAFC !important;
+}
+.bg-gray-950\/80 .text-white { color: #FFFFFF !important; }
+.bg-gray-950\/80 .text-gray-400, .bg-gray-950\/80 .text-gray-500 { color: #CBD5E1 !important; }
 
 /* ===== STATUS BADGE COLOR REMAP (dark-theme "-400" → readable on light) ===== */
 .status-badge.text-emerald-400, .text-emerald-400.status-badge { color: #047857 !important; }
