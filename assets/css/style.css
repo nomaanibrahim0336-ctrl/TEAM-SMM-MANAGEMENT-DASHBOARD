@@ -56,6 +56,15 @@ i.text-white:not([class*="bg-"]), strong.text-white {
   background-color: #475569 !important;
   color: #F8FAFC !important;
 }
+/* Text/icons nested inside those dark surfaces must stay light —
+   otherwise rules like .text-gray-200 (also #475569) make them invisible */
+.bg-gray-600 *, .bg-gray-700 *, .bg-gray-800\/30 *, .bg-gray-800\/40 *, .bg-gray-800\/60 * {
+  color: #F8FAFC !important;
+}
+.bg-gray-600 input[type="checkbox"], .bg-gray-700 input[type="checkbox"],
+.bg-gray-800\/30 input[type="checkbox"], .bg-gray-800\/40 input[type="checkbox"], .bg-gray-800\/60 input[type="checkbox"] {
+  accent-color: var(--blue);
+}
 .bg-gray-950\/80 {
   background-color: rgba(30,41,59,0.85) !important;
   color: #F8FAFC !important;
