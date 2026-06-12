@@ -319,6 +319,31 @@ body {
   margin-bottom: 24px;
 }
 
+header {
+  background: linear-gradient(135deg, #1E293B, #0F172A) !important;
+  border-color: #0F172A !important;
+}
+header h1, header h2 {
+  color: #FFFFFF !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.01em;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.25);
+}
+header p {
+  color: #CBD5E1 !important;
+}
+header .text-gray-400, header .text-gray-500, header .text-gray-600,
+header .text-gray-300, header .text-gray-200 {
+  color: #CBD5E1 !important;
+}
+header .bg-gray-800, header .bg-gray-900, header .bg-gray-950 {
+  background-color: rgba(255,255,255,0.08) !important;
+  color: #F8FAFC !important;
+}
+header .border-gray-800, header .border-gray-700 {
+  border-color: rgba(255,255,255,0.15) !important;
+}
+
 /* ===== TABS ===== */
 .tab-btn {
   padding: 8px 16px;
